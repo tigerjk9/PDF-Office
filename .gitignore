@@ -36,3 +36,5 @@ _workspace/
 
 # omc internal state
 .omc/
+
+.vercel
