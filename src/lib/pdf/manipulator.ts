@@ -198,26 +198,42 @@ export async function replaceTextAtRect(
     }
   }
 
-  // 1) 기존 텍스트 영역을 흰 사각형으로 덮기
+  // 폰트 크기 추정 (호출 측 추정값 우선).
+  const fontSize =
+    target.fontSize ?? Math.max(8, Math.min(target.height * 0.85, 24))
+
+  // redact 박스를 "한 줄" 이내로 단단히 제한한다 (버그1).
+  //
+  // 상류(TextEditLayer)의 좌표 추정이 과대평가되어도 흰 사각형이 인접/다중
+  // 라인을 침범해 문서를 훼손하지 않도록, 높이는 fontSize 기반 한 줄
+  // (≤ fontSize*1.5), 너비는 입력 폭을 넘지 않게 클램프하고, 텍스트 밴드
+  // 중앙에 정렬한다. (완벽 WYSIWYG 아님 — 한계는 README 명시)
+  const lineH = Math.min(
+    Math.max(target.height, fontSize * 1.05),
+    fontSize * 1.5,
+  )
+  const safeW = Math.max(Math.min(target.width, 2000), fontSize * 0.5)
+  const rectY = target.y + (target.height - lineH) / 2
+
+  // 1) 기존 텍스트 영역을 흰 사각형으로 덮기 (한 줄로 제한)
   page.drawRectangle({
     x: target.x,
-    y: target.y,
-    width: target.width,
-    height: target.height,
+    y: rectY,
+    width: safeW,
+    height: lineH,
     color: rgb(1, 1, 1),
     borderColor: rgb(1, 1, 1),
     borderWidth: 0,
   })
 
-  // 2) 새 텍스트 그리기
-  const fontSize = target.fontSize ?? Math.max(8, Math.min(target.height * 0.85, 24))
+  // 2) 새 텍스트 그리기 — 한 줄 박스 기준 세로 중앙
   page.drawText(replacement, {
     x: target.x,
-    y: target.y + (target.height - fontSize) / 2,
+    y: rectY + (lineH - fontSize) / 2,
     size: fontSize,
     font,
     color: rgb(0, 0, 0),
-    maxWidth: target.width,
+    maxWidth: safeW,
   })
 
   return { bytes: await doc.save(), replaced: true, warning }

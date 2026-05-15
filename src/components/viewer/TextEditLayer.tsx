@@ -140,6 +140,18 @@ export function TextEditLayer({
               Math.min(Math.round(fontPx), 96),
             )
 
+            // pdfRect 를 한 줄 크기로 클램프 (버그1 방어 심화).
+            // 상류 변환이 과대평가돼도 엔진 redact 가 인접/다중 라인을
+            // 침범하지 않도록 폭/높이를 단단히 제한해 전달한다.
+            const rawW = Math.max(maxX - minX, 1)
+            const rawH = Math.max(maxY - minY, 1)
+            const safeRect = {
+              x: minX,
+              y: minY,
+              width: Math.min(rawW, pdfFontSize * Math.max(str.length, 1) * 1.2),
+              height: Math.min(rawH, pdfFontSize * 1.6),
+            }
+
             next.push({
               id: `s${n++}`,
               text: str,
@@ -148,12 +160,7 @@ export function TextEditLayer({
               screenWidth,
               screenHeight,
               screenFontPx: Math.max(screenHeight * 0.82, 6),
-              pdfRect: {
-                x: minX,
-                y: minY,
-                width: Math.max(maxX - minX, 1),
-                height: Math.max(maxY - minY, 1),
-              },
+              pdfRect: safeRect,
               pdfFontSize,
             })
           }

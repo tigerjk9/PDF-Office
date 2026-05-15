@@ -26,6 +26,8 @@ import { TextEditLayer } from '@/components/viewer/TextEditLayer'
 export function PdfViewer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  /** 진행 중 렌더 핸들 — 새 렌더 전에 cancel() (캔버스 다중 render 충돌 방지) */
+  const renderHandleRef = useRef<{ cancel: () => void } | null>(null)
   const [isRendering, setIsRendering] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
   /** 텍스트 편집 모드 (UI 전용 — 스토어 비결합) */
@@ -106,30 +108,39 @@ export function PdfViewer() {
   useEffect(() => {
     if (!activeDoc || !page || !canvasRef.current || !boxSize) return
 
-    let cancelled = false
+    let disposed = false
 
-    const render = async () => {
-      setIsRendering(true)
-      setRenderError(null)
-      try {
-        if (cancelled || !canvasRef.current) return
-        await renderPageToCanvas(activeDoc.bytes, pageIndex, canvasRef.current, {
-          scale: boxSize.scale,
-          rotation: page.rotation,
-        })
-      } catch (err) {
-        if (!cancelled) {
-          setRenderError(err instanceof Error ? err.message : 'Render failed')
+    // 이전 렌더가 진행 중이면 먼저 취소 — 같은 canvas 다중 render() 금지
+    // (새로고침 직후 rehydrate + ResizeObserver 로 빠르게 재실행될 때 충돌).
+    renderHandleRef.current?.cancel()
+
+    setIsRendering(true)
+    setRenderError(null)
+
+    const handle = renderPageToCanvas(
+      activeDoc.bytes,
+      pageIndex,
+      canvasRef.current,
+      { scale: boxSize.scale, rotation: page.rotation },
+    )
+    renderHandleRef.current = handle
+
+    handle.promise
+      .then(() => {
+        if (!disposed) setIsRendering(false)
+      })
+      .catch((err: unknown) => {
+        if (disposed) return
+        if (err && (err as { name?: string }).name === 'RenderingCancelledException') {
+          return
         }
-      } finally {
-        if (!cancelled) setIsRendering(false)
-      }
-    }
-
-    void render()
+        setRenderError(err instanceof Error ? err.message : '렌더링 실패')
+        setIsRendering(false)
+      })
 
     return () => {
-      cancelled = true
+      disposed = true
+      handle.cancel()
     }
   }, [activeDoc, page, pageIndex, boxSize])
 

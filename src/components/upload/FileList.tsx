@@ -99,7 +99,7 @@ export function FileList() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 flex-shrink-0 opacity-0 transition-opacity duration-fast hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                  className="h-6 w-6 flex-shrink-0 text-muted-foreground/70 transition-colors duration-fast hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={(e) => {
                     e.stopPropagation()
                     removeDocument(doc.id)

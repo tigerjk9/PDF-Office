@@ -16,48 +16,87 @@ export interface RenderOptions {
   rotation?: 0 | 90 | 180 | 270
 }
 
+/** 취소 가능한 렌더 핸들. */
+export interface RenderHandle {
+  /** 렌더 완료(또는 취소 시 조용히 resolve). 에러만 reject. */
+  promise: Promise<void>
+  /** 진행 중 pdfjs RenderTask 를 취소한다(같은 캔버스 다중 render 충돌 방지). */
+  cancel: () => void
+}
+
+/** pdfjs 가 취소 시 던지는 예외인지 식별. */
+function isCancelled(e: unknown): boolean {
+  return !!e && (e as { name?: string }).name === 'RenderingCancelledException'
+}
+
 /**
- * 특정 페이지를 외부 canvas에 직접 렌더.
- * 호출 측이 canvas DOM 노드를 소유한다.
+ * 특정 페이지를 외부 canvas에 직접 렌더 (취소 가능).
+ *
+ * 같은 canvas 에 대한 동시 render() 는 pdfjs 에서 금지("Cannot use the same
+ * canvas during multiple render() operations")되므로, 호출 측은 새 렌더 전에
+ * 반드시 이전 핸들의 cancel() 을 호출해야 한다.
  *
  * @param bytes PDF 원본 바이트
  * @param pageIndex 0-based 페이지 인덱스
  * @param canvas 렌더 대상 캔버스
  * @param opts 스케일/회전
  */
-export async function renderPageToCanvas(
+export function renderPageToCanvas(
   bytes: Uint8Array,
   pageIndex: number,
   canvas: HTMLCanvasElement,
   opts: RenderOptions,
-): Promise<void> {
-  const doc = await loadPdfDocument(bytes)
-  try {
-    const page = await doc.getPage(pageIndex + 1) // pdfjs는 1-based
-    const viewport = page.getViewport({
-      scale: opts.scale,
-      rotation: opts.rotation ?? 0,
-    })
+): RenderHandle {
+  let cancelled = false
+  let renderTask: { cancel: () => void } | null = null
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas 2D context unavailable')
+  const promise = (async () => {
+    const doc = await loadPdfDocument(bytes)
+    try {
+      if (cancelled) return
+      const page = await doc.getPage(pageIndex + 1) // pdfjs는 1-based
+      const viewport = page.getViewport({
+        scale: opts.scale,
+        rotation: opts.rotation ?? 0,
+      })
 
-    // devicePixelRatio 대응 (HiDPI 선명도)
-    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
-    canvas.width = Math.floor(viewport.width * dpr)
-    canvas.height = Math.floor(viewport.height * dpr)
-    canvas.style.width = `${viewport.width}px`
-    canvas.style.height = `${viewport.height}px`
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas 2D context unavailable')
 
-    await page.render({
-      canvasContext: ctx,
-      viewport,
-    }).promise
+      // devicePixelRatio 대응 (HiDPI 선명도)
+      const dpr =
+        typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+      canvas.width = Math.floor(viewport.width * dpr)
+      canvas.height = Math.floor(viewport.height * dpr)
+      canvas.style.width = `${viewport.width}px`
+      canvas.style.height = `${viewport.height}px`
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    page.cleanup()
-  } finally {
-    await doc.destroy()
+      if (cancelled) return
+      const task = page.render({ canvasContext: ctx, viewport })
+      renderTask = task
+      try {
+        await task.promise
+      } catch (e) {
+        if (!isCancelled(e)) throw e
+        return // 취소는 정상 흐름 — 조용히 종료
+      }
+      page.cleanup()
+    } finally {
+      await doc.destroy()
+    }
+  })()
+
+  return {
+    promise,
+    cancel: () => {
+      cancelled = true
+      try {
+        renderTask?.cancel()
+      } catch {
+        // 이미 종료된 태스크 취소는 무해
+      }
+    },
   }
 }
 
