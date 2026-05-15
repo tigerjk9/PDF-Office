@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Search,
   HelpCircle,
+  RotateCcw,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,7 @@ export function AppShell() {
   const loadingMessage = usePdfStore((s) => s.loadingMessage)
   const error = usePdfStore((s) => s.error)
   const clearError = usePdfStore((s) => s.clearError)
+  const reset = usePdfStore((s) => s.reset)
 
   const [aiOpen, setAiOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -69,6 +71,7 @@ export function AppShell() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [mobileDocsOpen, setMobileDocsOpen] = useState(false)
   const [mobilePagesOpen, setMobilePagesOpen] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
 
   const canMerge = documents.length >= 2
 
@@ -288,8 +291,29 @@ export function AppShell() {
             className="hidden w-[17rem] flex-shrink-0 flex-col border-r border-border bg-background md:flex"
             aria-label="문서 사이드바"
           >
-            <div className="flex h-9 flex-shrink-0 items-center px-3 text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              문서
+            <div className="flex h-9 flex-shrink-0 items-center justify-between gap-2 px-3">
+              <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+                문서
+              </span>
+              {documents.length > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-destructive"
+                      onClick={() => setResetOpen(true)}
+                      aria-label="모든 문서 초기화"
+                    >
+                      <RotateCcw className="h-3 w-3" aria-hidden />
+                      초기화
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    업로드한 모든 PDF·편집 내역 삭제
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <Separator />
             <div className="p-2.5">
@@ -351,6 +375,18 @@ export function AppShell() {
                 aria-hidden
               />
               <SheetTitle>문서</SheetTitle>
+              {documents.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 gap-1 px-2 text-2xs text-muted-foreground hover:text-destructive"
+                  onClick={() => setResetOpen(true)}
+                  aria-label="모든 문서 초기화"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                  초기화
+                </Button>
+              )}
             </SheetHeader>
             <div className="p-2.5">
               <DropZone variant="compact" />
@@ -442,6 +478,18 @@ export function AppShell() {
           title={`${pendingIndices.length}개 페이지를 삭제할까요?`}
           description={deleteDescription}
           confirmLabel="삭제"
+          cancelLabel="취소"
+          destructive
+        />
+
+        {/* 전체 문서 초기화 확인 다이얼로그 */}
+        <ConfirmDialog
+          open={resetOpen}
+          onOpenChange={setResetOpen}
+          onConfirm={reset}
+          title="모든 문서를 초기화할까요?"
+          description="업로드한 모든 PDF와 편집 내역이 삭제되고 처음 화면으로 돌아갑니다. 이 작업은 되돌릴 수 없습니다."
+          confirmLabel="초기화"
           cancelLabel="취소"
           destructive
         />
