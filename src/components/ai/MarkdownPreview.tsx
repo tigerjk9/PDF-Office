@@ -38,22 +38,21 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
   return (
     <div className="flex h-full flex-col">
       {/* 액션 바 */}
-      <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-2">
-        <span className="text-xs text-muted-foreground">
+      <div className="flex h-10 flex-shrink-0 items-center justify-between border-b border-border px-4">
+        <span className="text-2xs tabular-nums text-muted-foreground">
           {markdown.length.toLocaleString()}자
         </span>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-xs"
             onClick={handleCopy}
             aria-label="Markdown 클립보드에 복사"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-green-600" />
-                <span className="text-green-600">복사됨</span>
+                <Check className="h-3.5 w-3.5 text-success" />
+                <span className="text-success">복사됨</span>
               </>
             ) : (
               <>
@@ -65,7 +64,6 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
           <Button
             variant="outline"
             size="sm"
-            className="h-7 gap-1.5 text-xs"
             onClick={handleDownload}
             aria-label="Markdown 파일 다운로드"
           >
@@ -77,7 +75,7 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
 
       {/* 렌더링된 Markdown */}
       <ScrollArea className="flex-1">
-        <div className="prose prose-sm max-w-none p-4 dark:prose-invert">
+        <div className="md-prose p-5">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
         </div>
       </ScrollArea>

@@ -5,9 +5,9 @@ import { Search, Loader2, AlertCircle, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import { searchText } from '@/lib/pdf/search'
 import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
+import { cn } from '@/lib/utils'
 
 interface SearchResult {
   pageIndex: number
@@ -72,10 +72,10 @@ export function SearchPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* 검색 입력 */}
-      <div className="flex-shrink-0 space-y-3 border-b p-4">
+      <div className="flex-shrink-0 space-y-2.5 border-b border-border p-4">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
           />
           <input
@@ -88,21 +88,21 @@ export function SearchPanel() {
                 void runSearch()
               }
             }}
-            placeholder="문서에서 검색할 텍스트 입력 후 Enter"
-            className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder="검색할 텍스트 입력 후 Enter"
+            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="문서 텍스트 검색"
           />
         </div>
         <Button
           size="sm"
-          className="w-full gap-1.5"
+          className="w-full"
           onClick={() => void runSearch()}
           disabled={isSearching || query.trim().length === 0}
         >
           {isSearching ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              검색 중...
+              검색 중…
             </>
           ) : (
             <>
@@ -112,7 +112,7 @@ export function SearchPanel() {
           )}
         </Button>
         {searched && !isSearching && !error && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-2xs tabular-nums text-muted-foreground">
             {results.length > 0
               ? `${results.length}개 페이지에서 찾았습니다.`
               : '일치하는 결과가 없습니다.'}
@@ -121,9 +121,12 @@ export function SearchPanel() {
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs text-destructive"
+            className="flex items-start gap-2 rounded-md border border-destructive-soft-border bg-destructive-soft p-2.5 text-xs text-destructive"
           >
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <AlertCircle
+              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+              aria-hidden
+            />
             <span>{error}</span>
           </div>
         )}
@@ -132,44 +135,52 @@ export function SearchPanel() {
       {/* 결과 리스트 */}
       <ScrollArea className="min-h-0 flex-1">
         {results.length > 0 ? (
-          <ul className="space-y-1.5 p-3" aria-label="검색 결과">
-            {results.map((r) => (
-              <li key={r.pageIndex}>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(r.pageIndex)}
-                  className={`flex w-full items-start gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    r.pageIndex === currentPageIndex
-                      ? 'border-primary bg-primary/5'
-                      : 'border-transparent hover:bg-accent'
-                  }`}
-                  aria-label={`${r.pageIndex + 1}페이지로 이동`}
-                >
-                  <FileText
-                    className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Badge
-                      variant="outline"
-                      className="h-4 px-1.5 text-[10px]"
-                    >
-                      {r.pageIndex + 1}페이지
-                    </Badge>
-                    <p className="mt-1 line-clamp-3 break-words text-[11px] text-muted-foreground">
-                      {r.snippet}
-                    </p>
-                  </div>
-                </button>
-              </li>
-            ))}
+          <ul className="space-y-1 p-2.5" aria-label="검색 결과">
+            {results.map((r) => {
+              const active = r.pageIndex === currentPageIndex
+              return (
+                <li key={r.pageIndex}>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(r.pageIndex)}
+                    className={cn(
+                      'relative flex w-full items-start gap-2.5 rounded-md py-2 pl-3 pr-2.5 text-left text-xs transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      active ? 'bg-primary-soft' : 'hover:bg-muted',
+                    )}
+                    aria-label={`${r.pageIndex + 1}페이지로 이동`}
+                  >
+                    {active && (
+                      <span
+                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary"
+                        aria-hidden
+                      />
+                    )}
+                    <FileText
+                      className={cn(
+                        'mt-0.5 h-4 w-4 flex-shrink-0',
+                        active ? 'text-primary' : 'text-muted-foreground',
+                      )}
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-2xs font-semibold tabular-nums text-foreground">
+                        {r.pageIndex + 1}페이지
+                      </span>
+                      <p className="mt-1 line-clamp-3 break-words text-2xs leading-relaxed text-muted-foreground">
+                        {r.snippet}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         ) : (
-          <div className="flex h-full items-center justify-center p-6 text-center">
-            <p className="text-xs text-muted-foreground">
+          <div className="flex h-full items-start justify-start p-5">
+            <p className="max-w-[34ch] text-xs leading-relaxed text-muted-foreground">
               {searched && !isSearching
                 ? '다른 검색어로 다시 시도해 보세요.'
-                : '검색어를 입력하면 결과가 여기에 표시됩니다.'}
+                : '검색어를 입력하면 일치하는 페이지가 여기에 표시됩니다.'}
             </p>
           </div>
         )}

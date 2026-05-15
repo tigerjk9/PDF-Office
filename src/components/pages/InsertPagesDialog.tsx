@@ -128,9 +128,12 @@ export function InsertPagesDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] w-full max-w-2xl flex-col gap-0 p-0">
-        <DialogHeader className="border-b px-6 py-4 text-left">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <FilePlus2 className="h-4 w-4" aria-hidden />
+        <DialogHeader className="gap-1.5 border-b border-border px-5 py-4">
+          <DialogTitle className="flex items-center gap-2">
+            <FilePlus2
+              className="h-4 w-4 text-muted-foreground"
+              aria-hidden
+            />
             다른 문서 페이지 삽입
           </DialogTitle>
           <DialogDescription>
@@ -146,13 +149,13 @@ export function InsertPagesDialog({
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 md:grid-cols-2">
             {/* 소스 문서 선택 */}
-            <div className="flex min-h-0 flex-col border-b md:border-b-0 md:border-r">
-              <div className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex min-h-0 flex-col border-b border-border md:border-b-0 md:border-r">
+              <div className="flex h-10 items-center px-4 text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 소스 문서
               </div>
               <Separator />
               <ScrollArea className="min-h-0 flex-1">
-                <ul className="space-y-1.5 p-3">
+                <ul className="space-y-1 p-2.5">
                   {sourceCandidates.map((doc) => (
                     <li key={doc.id}>
                       <button
@@ -162,23 +165,28 @@ export function InsertPagesDialog({
                           setPicked([])
                         }}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded-md border px-2 py-2 text-left text-xs transition-colors',
-                          'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-xs transition-colors duration-fast',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           doc.id === sourceDocId
-                            ? 'border-primary bg-primary/5'
-                            : 'border-transparent hover:bg-accent',
+                            ? 'bg-primary-soft'
+                            : 'hover:bg-muted',
                         )}
                         aria-pressed={doc.id === sourceDocId}
                       >
                         <FileText
-                          className="h-4 w-4 flex-shrink-0 text-muted-foreground"
+                          className={cn(
+                            'h-4 w-4 flex-shrink-0',
+                            doc.id === sourceDocId
+                              ? 'text-primary'
+                              : 'text-muted-foreground',
+                          )}
                           aria-hidden
                         />
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium text-foreground">
                             {doc.name}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-muted-foreground">
+                          <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                             {doc.pageCount}p
                           </div>
                         </div>
@@ -191,31 +199,34 @@ export function InsertPagesDialog({
 
             {/* 소스 문서의 페이지 선택 */}
             <div className="flex min-h-0 flex-col">
-              <div className="flex items-center justify-between px-5 py-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="flex h-10 items-center justify-between px-4">
+                <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                   삽입할 페이지
                 </span>
-                <Badge variant="secondary" className="text-[10px]">
-                  {picked.length}개 선택
-                </Badge>
+                <Badge variant="default">{picked.length}개 선택</Badge>
               </div>
               <Separator />
               <ScrollArea className="min-h-0 flex-1">
                 {sourceDoc ? (
-                  <div className="grid grid-cols-4 gap-1.5 p-3">
+                  <div className="grid grid-cols-4 gap-2 p-2.5">
                     {sourceDoc.pages.map((p) => {
                       const sel = picked.includes(p.index)
+                      const ratio =
+                        p.width > 0 && p.height > 0
+                          ? `${p.width} / ${p.height}`
+                          : '3 / 4'
                       return (
                         <button
                           key={p.index}
                           type="button"
                           onClick={() => togglePick(p.index)}
+                          style={{ aspectRatio: ratio }}
                           className={cn(
-                            'relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded border bg-white text-[10px] transition-all',
-                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'relative flex items-center justify-center overflow-hidden rounded-md border bg-background text-2xs transition-[border-color,box-shadow] duration-fast',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                             sel
-                              ? 'ring-2 ring-blue-500 ring-offset-1'
-                              : 'border-gray-200 hover:border-primary/40',
+                              ? 'border-primary ring-2 ring-primary ring-offset-1 ring-offset-background'
+                              : 'border-border hover:border-border-strong',
                           )}
                           aria-pressed={sel}
                           aria-label={`${p.index + 1}페이지 ${
@@ -227,15 +238,23 @@ export function InsertPagesDialog({
                             <img
                               src={p.thumbnail}
                               alt={`${p.index + 1}페이지`}
-                              className="h-full w-full object-contain"
+                              className="media-fade h-full w-full object-contain"
                               draggable={false}
                             />
                           ) : (
-                            <span className="text-gray-400">
-                              {p.index + 1}
-                            </span>
+                            <span
+                              className="skeleton-shimmer h-full w-full"
+                              aria-hidden
+                            />
                           )}
-                          <span className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-0.5 text-[9px] font-medium text-white">
+                          <span
+                            className={cn(
+                              'absolute bottom-0.5 left-0.5 rounded-[3px] px-1 py-px text-[9px] font-medium tabular-nums',
+                              sel
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-foreground/65 text-background',
+                            )}
+                          >
                             {p.index + 1}
                           </span>
                         </button>
@@ -243,7 +262,7 @@ export function InsertPagesDialog({
                     })}
                   </div>
                 ) : (
-                  <div className="px-5 py-10 text-center text-xs text-muted-foreground">
+                  <div className="px-4 py-10 text-center text-xs text-muted-foreground">
                     왼쪽에서 소스 문서를 선택하세요.
                   </div>
                 )}
@@ -254,11 +273,11 @@ export function InsertPagesDialog({
 
         <Separator />
 
-        <DialogFooter className="flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <DialogFooter className="flex-col gap-3 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex w-full flex-col gap-1 sm:max-w-[200px]">
             <label
               htmlFor="insert-at-position"
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-2xs font-medium text-muted-foreground"
             >
               삽입 위치 (1 ~ {targetCount + 1})
             </label>
@@ -271,7 +290,7 @@ export function InsertPagesDialog({
                 setAtInput(e.target.value.replace(/[^0-9]/g, ''))
               }
               placeholder={String(targetCount + 1)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-xs tabular-nums ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 rounded-md border border-input bg-background px-3 text-xs tabular-nums transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="삽입 위치 (현재 문서 기준 페이지 번호)"
             />
           </div>
@@ -306,7 +325,7 @@ export function InsertPagesDialog({
         </DialogFooter>
         {sourceCandidates.length > 0 && picked.length === 0 && (
           <p
-            className="px-6 pb-4 text-[11px] text-muted-foreground"
+            className="border-t border-border bg-muted/40 px-5 py-2.5 text-2xs text-muted-foreground"
             role="note"
           >
             삽입할 페이지를 1개 이상 선택하세요.

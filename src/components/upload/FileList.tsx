@@ -5,7 +5,6 @@ import { FileText, X, CheckCircle2 } from 'lucide-react'
 import { cn, formatBytes } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import { usePdfStore } from '@/lib/store/pdf-store'
 
 /**
@@ -21,15 +20,20 @@ export function FileList() {
 
   if (documents.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center px-6 py-8 text-center text-xs text-muted-foreground">
-        아직 문서가 없습니다. PDF를 끌어다 놓거나 위의 &quot;PDF 추가&quot;를 누르세요.
+      <div className="flex h-full flex-col items-start justify-center gap-1.5 px-4 py-8">
+        <p className="text-xs font-medium text-foreground">
+          문서가 없습니다
+        </p>
+        <p className="text-2xs leading-relaxed text-muted-foreground">
+          PDF를 끌어다 놓거나 위의 &quot;PDF 추가&quot;로 시작하세요.
+        </p>
       </div>
     )
   }
 
   return (
     <ScrollArea className="h-full">
-      <ul className="space-y-1 p-2" role="listbox" aria-label="불러온 문서 목록">
+      <ul className="p-1.5" role="listbox" aria-label="불러온 문서 목록">
         {documents.map((doc) => {
           const isActive = doc.id === activeDocId
           return (
@@ -46,26 +50,37 @@ export function FileList() {
                   }
                 }}
                 className={cn(
-                  'group flex w-full cursor-pointer items-start gap-2 rounded-md border px-2 py-2 text-left text-xs transition-colors',
+                  'group relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pl-3 pr-1.5 text-left transition-colors duration-fast',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isActive
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                    : 'border-transparent hover:bg-accent',
+                    ? 'bg-primary-soft'
+                    : 'hover:bg-muted',
                 )}
               >
-                <div
+                {/* 활성 표시: 카드 테두리 대신 좌측 액센트 레일 */}
+                {isActive && (
+                  <span
+                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary"
+                    aria-hidden
+                  />
+                )}
+                <FileText
                   className={cn(
-                    'mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-gray-100 text-gray-500',
+                    'h-4 w-4 flex-shrink-0',
+                    isActive ? 'text-primary' : 'text-muted-foreground',
                   )}
-                >
-                  <FileText className="h-4 w-4" />
-                </div>
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1">
-                    <span className="truncate text-xs font-medium text-foreground">
+                    <span
+                      className={cn(
+                        'truncate text-xs',
+                        isActive
+                          ? 'font-semibold text-foreground'
+                          : 'font-medium text-foreground',
+                      )}
+                    >
                       {doc.name}
                     </span>
                     {isActive && (
@@ -75,17 +90,16 @@ export function FileList() {
                       />
                     )}
                   </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <Badge variant="outline" className="h-4 px-1 py-0 text-[10px]">
-                      {doc.pageCount}p
-                    </Badge>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-2xs tabular-nums text-muted-foreground">
+                    <span>{doc.pageCount}페이지</span>
+                    <span aria-hidden>·</span>
                     <span>{formatBytes(doc.sizeBytes)}</span>
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  className="h-6 w-6 flex-shrink-0 opacity-0 transition-opacity duration-fast hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation()
                     removeDocument(doc.id)

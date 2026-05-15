@@ -26,15 +26,15 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         aria-valuemax={100}
         aria-valuenow={indeterminate ? undefined : Math.round(clamped)}
         className={cn(
-          'relative h-2 w-full overflow-hidden rounded-full bg-primary/15',
+          'relative h-1 w-full overflow-hidden rounded-full bg-border',
           className,
         )}
         {...props}
       >
         <div
           className={cn(
-            'h-full rounded-full bg-primary transition-all duration-300 ease-out',
-            indeterminate && 'w-1/3 animate-pulse',
+            'h-full rounded-full bg-primary transition-[width] duration-slow ease-out-quart',
+            indeterminate && 'w-2/5 animate-[progress-indeterminate_1.2s_cubic-bezier(0.16,1,0.3,1)_infinite]',
           )}
           style={indeterminate ? undefined : { width: `${clamped}%` }}
         />

@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/tooltip'
 
 import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
-import { cn } from '@/lib/utils'
 
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 4.0
@@ -76,12 +75,12 @@ export function ZoomControl() {
 
   return (
     <div
-      className="flex h-11 flex-shrink-0 items-center gap-2 overflow-x-auto border-b bg-white px-3"
+      className="flex h-10 flex-shrink-0 items-center gap-2 overflow-x-auto border-b border-border bg-background px-2.5"
       role="toolbar"
       aria-label="뷰어 컨트롤"
     >
       {/* 페이지 네비게이션 */}
-      <div className="flex flex-shrink-0 items-center gap-1">
+      <div className="flex flex-shrink-0 items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -121,9 +120,11 @@ export function ZoomControl() {
               }
             }}
             aria-label={`현재 페이지 (전체 ${pageCount}페이지)`}
-            className="h-7 w-10 rounded border border-input bg-background text-center tabular-nums text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-7 w-9 rounded-md border border-input bg-background text-center text-xs tabular-nums text-foreground transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
-          <span className="tabular-nums">/ {pageCount}</span>
+          <span className="tabular-nums text-muted-foreground">
+            / {pageCount}
+          </span>
         </div>
 
         <Tooltip>
@@ -143,7 +144,7 @@ export function ZoomControl() {
         </Tooltip>
       </div>
 
-      <Separator orientation="vertical" className="h-5 flex-shrink-0" />
+      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
 
       {/* 줌 컨트롤 */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -163,7 +164,7 @@ export function ZoomControl() {
           <TooltipContent>축소</TooltipContent>
         </Tooltip>
 
-        <div className="flex w-28 flex-shrink-0 items-center sm:w-40">
+        <div className="flex w-24 flex-shrink-0 items-center sm:w-36">
           <Slider
             value={[zoom]}
             min={MIN_ZOOM}
@@ -190,21 +191,21 @@ export function ZoomControl() {
           <TooltipContent>확대</TooltipContent>
         </Tooltip>
 
-        <span className="w-12 flex-shrink-0 select-none text-center text-xs tabular-nums text-muted-foreground">
+        <span className="w-11 flex-shrink-0 select-none text-right text-xs tabular-nums text-muted-foreground">
           {zoomPct}%
         </span>
       </div>
 
-      <Separator orientation="vertical" className="h-5 flex-shrink-0" />
+      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
 
       {/* 맞춤 모드 */}
-      <div className="flex flex-shrink-0 items-center gap-1">
+      <div className="flex flex-shrink-0 items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={fitMode === 'fit-width' ? 'secondary' : 'ghost'}
+              variant={fitMode === 'fit-width' ? 'default' : 'ghost'}
               size="icon"
-              className={cn('h-7 w-7')}
+              className="h-7 w-7"
               onClick={() =>
                 setFitMode(fitMode === 'fit-width' ? null : 'fit-width')
               }
@@ -219,9 +220,9 @@ export function ZoomControl() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={fitMode === 'fit-page' ? 'secondary' : 'ghost'}
+              variant={fitMode === 'fit-page' ? 'default' : 'ghost'}
               size="icon"
-              className={cn('h-7 w-7')}
+              className="h-7 w-7"
               onClick={() =>
                 setFitMode(fitMode === 'fit-page' ? null : 'fit-page')
               }

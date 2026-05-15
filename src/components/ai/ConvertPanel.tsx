@@ -25,10 +25,34 @@ import {
 import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
 import type { AIProvider } from '@/lib/types'
 
-const PROVIDERS: { id: AIProvider; label: string; placeholder: string }[] = [
-  { id: 'claude', label: 'Claude', placeholder: 'sk-ant-...' },
-  { id: 'gemini', label: 'Gemini', placeholder: 'AIza...' },
-  { id: 'openai', label: 'GPT-4o', placeholder: 'sk-...' },
+/**
+ * PROVIDERS 라벨은 server/* 모델 상수와 정확히 정합한다 (R2-1):
+ * claude-sonnet-4-6 / gemini-2.5-flash / gpt-4o.
+ */
+const PROVIDERS: {
+  id: AIProvider
+  label: string
+  model: string
+  placeholder: string
+}[] = [
+  {
+    id: 'claude',
+    label: 'Claude',
+    model: 'Claude Sonnet 4.6',
+    placeholder: 'sk-ant-...',
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    model: 'Gemini 2.5 Flash',
+    placeholder: 'AIza...',
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    model: 'GPT-4o',
+    placeholder: 'sk-...',
+  },
 ]
 
 const SCOPE_OPTIONS: { id: ConvertScope; label: string }[] = [
@@ -107,8 +131,10 @@ export function ConvertPanel() {
 
   if (!activeDoc) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        먼저 PDF 문서를 열어야 AI 변환을 사용할 수 있습니다.
+      <div className="flex h-full items-start p-5">
+        <p className="max-w-[34ch] text-sm leading-relaxed text-muted-foreground">
+          먼저 PDF 문서를 열어야 AI 변환을 사용할 수 있습니다.
+        </p>
       </div>
     )
   }
@@ -170,12 +196,12 @@ export function ConvertPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* 설정 영역 */}
-      <div className="flex-shrink-0 space-y-4 border-b p-4">
+      <div className="flex-shrink-0 space-y-4 border-b border-border p-4">
         {/* P2-7: 이전 변환 결과 캐시 배너 */}
         {hasCache && !isConverting && (
-          <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs">
+          <div className="flex items-center gap-2.5 rounded-md border border-primary-soft-border bg-primary-soft p-2.5 text-xs">
             <History
-              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary"
+              className="h-4 w-4 flex-shrink-0 text-primary"
               aria-hidden
             />
             <div className="min-w-0 flex-1">
@@ -183,7 +209,7 @@ export function ConvertPanel() {
                 이전 변환 결과가 있습니다
               </p>
               {cachedTime != null && (
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p className="mt-0.5 text-2xs text-muted-foreground">
                   {formatCachedAt(cachedTime)}에 변환됨
                 </p>
               )}
@@ -191,7 +217,7 @@ export function ConvertPanel() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 flex-shrink-0 gap-1 text-[11px]"
+              className="flex-shrink-0"
               onClick={handleRestoreCache}
               aria-label="이전 변환 결과 불러오기"
             >
@@ -201,22 +227,26 @@ export function ConvertPanel() {
           </div>
         )}
 
-        {/* 제공자 선택 */}
+        {/* 제공자 선택 — 세그먼트 컨트롤 */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-foreground">
+          <label className="mb-2 block text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
             AI 제공자
           </label>
-          <div className="flex gap-1.5">
+          <div
+            className="flex gap-0.5 rounded-md border border-border bg-muted p-0.5"
+            role="group"
+            aria-label="AI 제공자 선택"
+          >
             {PROVIDERS.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => setProvider(p.id)}
                 disabled={isConverting}
-                className={`flex-1 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${
+                className={`flex-1 rounded-[5px] px-2 py-1 text-xs font-medium transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${
                   provider === p.id
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-gray-200 bg-white text-foreground hover:bg-gray-50'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 aria-pressed={provider === p.id}
               >
@@ -224,11 +254,17 @@ export function ConvertPanel() {
               </button>
             ))}
           </div>
+          <p className="mt-1.5 text-2xs text-muted-foreground">
+            모델:{' '}
+            <span className="font-medium text-foreground">
+              {providerInfo.model}
+            </span>
+          </p>
         </div>
 
         {/* P2-2: 변환 범위 선택 */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-foreground">
+          <label className="mb-2 block text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
             변환 범위
           </label>
           <div className="grid grid-cols-2 gap-1.5">
@@ -242,16 +278,16 @@ export function ConvertPanel() {
                   type="button"
                   onClick={() => setScope(opt.id)}
                   disabled={disabled}
-                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
                     scope === opt.id
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-gray-200 bg-white text-foreground hover:bg-gray-50'
+                      ? 'border-primary-soft-border bg-primary-soft text-primary'
+                      : 'border-border bg-background text-foreground hover:bg-muted'
                   }`}
                   aria-pressed={scope === opt.id}
                 >
                   {opt.label}
                   {opt.id === 'selected' && selectedPages.length > 0 && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">
+                    <span className="ml-1 tabular-nums text-muted-foreground">
                       ({selectedPages.length})
                     </span>
                   )}
@@ -262,12 +298,12 @@ export function ConvertPanel() {
 
           {/* scope별 보조 안내/입력 */}
           {scope === 'current' && (
-            <p className="mt-1.5 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-2xs text-muted-foreground">
               현재 페이지({currentPageIndex + 1}p)만 변환합니다.
             </p>
           )}
           {scope === 'selected' && (
-            <p className="mt-1.5 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-2xs text-muted-foreground">
               {selectedPages.length > 0
                 ? `선택한 ${selectedPages.length}개 페이지를 변환합니다.`
                 : '왼쪽 페이지 패널에서 페이지를 먼저 선택하세요.'}
@@ -284,9 +320,11 @@ export function ConvertPanel() {
                 }
                 disabled={isConverting}
                 aria-label="시작 페이지"
-                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-center text-xs tabular-nums ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-center text-xs tabular-nums transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               />
-              <span className="text-xs text-muted-foreground">~</span>
+              <span className="text-xs text-muted-foreground" aria-hidden>
+                –
+              </span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -296,9 +334,9 @@ export function ConvertPanel() {
                 }
                 disabled={isConverting}
                 aria-label="끝 페이지"
-                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-center text-xs tabular-nums ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-center text-xs tabular-nums transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-2xs text-muted-foreground">
                 / 전체 {pageCount}p
               </span>
             </div>
@@ -308,12 +346,15 @@ export function ConvertPanel() {
         {/* API 키 입력 */}
         <div>
           <div className="mb-1.5 flex items-center gap-1.5">
-            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
-            <label className="text-xs font-medium text-foreground">
+            <KeyRound
+              className="h-3.5 w-3.5 text-muted-foreground"
+              aria-hidden
+            />
+            <label className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               API 키
             </label>
             {currentKey && (
-              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              <Badge variant="default" className="ml-0.5">
                 저장됨
               </Badge>
             )}
@@ -324,19 +365,19 @@ export function ConvertPanel() {
               value={currentKey}
               onChange={handleKeyChange}
               placeholder={providerInfo.placeholder}
-              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 pr-16 text-xs font-mono placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              aria-label={`${providerInfo.label} API 키`}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 pr-14 text-xs tabular-nums transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`${providerInfo.model} API 키`}
             />
             <button
               type="button"
               onClick={() => setShowKey((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-[5px] px-1.5 py-1 text-2xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={showKey ? 'API 키 숨기기' : 'API 키 표시'}
             >
               {showKey ? '숨기기' : '표시'}
             </button>
           </div>
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1.5 text-2xs text-muted-foreground">
             브라우저에만 저장되며 서버로 전송되지 않습니다.
           </p>
         </div>
@@ -347,16 +388,16 @@ export function ConvertPanel() {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-1.5"
+              className="flex-1"
               onClick={cancel}
             >
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              변환 중... (취소)
+              변환 중… (취소)
             </Button>
           ) : (
             <Button
               size="sm"
-              className="flex-1 gap-1.5"
+              className="flex-1"
               onClick={handleConvert}
               disabled={!canConvert}
               aria-label="PDF를 Markdown으로 변환"
@@ -374,10 +415,10 @@ export function ConvertPanel() {
               value={progressPct}
               indeterminate={progressPct === 0}
             />
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs tabular-nums text-muted-foreground">
               {progressPct > 0
-                ? `변환 중... ${progressPct}%`
-                : '변환을 준비하는 중...'}
+                ? `변환 중… ${progressPct}%`
+                : '변환을 준비하는 중…'}
             </p>
           </div>
         )}
@@ -386,9 +427,12 @@ export function ConvertPanel() {
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs text-destructive"
+            className="flex items-start gap-2 rounded-md border border-destructive-soft-border bg-destructive-soft p-2.5 text-xs text-destructive"
           >
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <AlertCircle
+              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+              aria-hidden
+            />
             <span>{error}</span>
           </div>
         )}
@@ -399,28 +443,33 @@ export function ConvertPanel() {
         <div className="min-h-0 flex-1">
           {hasStreamingText ? (
             <Tabs defaultValue="preview" className="flex h-full flex-col">
-              <TabsList className="mx-4 mt-3 h-8 flex-shrink-0">
-                <TabsTrigger value="preview" className="gap-1.5 text-xs">
-                  <Eye className="h-3.5 w-3.5" />
-                  미리보기
-                </TabsTrigger>
-                <TabsTrigger value="raw" className="gap-1.5 text-xs">
-                  <Code2 className="h-3.5 w-3.5" />
-                  원본
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex-shrink-0 px-4 py-2.5">
+                <TabsList className="w-full">
+                  <TabsTrigger value="preview" className="gap-1.5">
+                    <Eye className="h-3.5 w-3.5" />
+                    미리보기
+                  </TabsTrigger>
+                  <TabsTrigger value="raw" className="gap-1.5">
+                    <Code2 className="h-3.5 w-3.5" />
+                    원본
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               <TabsContent
                 value="preview"
-                className="mt-0 min-h-0 flex-1 border-t"
+                className="mt-0 min-h-0 flex-1 border-t border-border"
               >
                 <MarkdownPreview
                   markdown={markdown}
                   fileName={activeDoc.name.replace(/\.pdf$/i, '.md')}
                 />
               </TabsContent>
-              <TabsContent value="raw" className="mt-0 min-h-0 flex-1 border-t">
+              <TabsContent
+                value="raw"
+                className="mt-0 min-h-0 flex-1 border-t border-border"
+              >
                 <ScrollArea className="h-full">
-                  <pre className="whitespace-pre-wrap break-words p-4 text-[11px] font-mono text-foreground">
+                  <pre className="whitespace-pre-wrap break-words p-4 font-mono text-2xs leading-relaxed text-foreground">
                     {markdown}
                     {isConverting && (
                       <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-primary align-middle" />
@@ -430,24 +479,33 @@ export function ConvertPanel() {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
-              <p className="text-xs text-muted-foreground">
-                문서를 분석하고 있습니다. 결과가 준비되는 대로 여기에
-                실시간으로 표시됩니다.
+            <div className="flex h-full flex-col items-start justify-center gap-3 px-5">
+              <span
+                className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-primary border-t-transparent"
+                aria-hidden
+              />
+              <p className="max-w-[34ch] text-xs leading-relaxed text-muted-foreground">
+                문서를 분석하고 있습니다. 결과가 준비되는 대로 여기에 실시간으로
+                표시됩니다.
               </p>
             </div>
           )}
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center p-6 text-center">
-          <div className="max-w-[220px] space-y-2">
-            <Sparkles className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="text-xs text-muted-foreground">
-              API 키를 입력한 뒤 <strong>Markdown으로 변환</strong>을 눌러
-              시작하세요.
-            </p>
-          </div>
+        <div className="flex flex-1 flex-col items-start justify-center gap-2 px-5">
+          <p className="text-sm font-medium text-foreground">
+            변환 결과가 여기에 표시됩니다
+          </p>
+          <p className="max-w-[36ch] text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {providerInfo.model}
+            </span>{' '}
+            API 키를 입력한 뒤{' '}
+            <span className="font-medium text-foreground">
+              Markdown으로 변환
+            </span>
+            을 누르세요.
+          </p>
         </div>
       )}
     </div>

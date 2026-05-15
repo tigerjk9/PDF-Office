@@ -8,6 +8,9 @@
  */
 
 import { PDFDocument, degrees, StandardFonts, rgb } from 'pdf-lib'
+import type { PDFFont } from 'pdf-lib'
+import { mergeNormalized } from './merge-normalize'
+import { embedKoreanFont } from './font-embed'
 
 /**
  * 지정한 페이지 인덱스들을 삭제.
@@ -76,8 +79,13 @@ export async function reorderPages(
 }
 
 /**
- * 2개 이상의 PDF 병합.
+ * 2개 이상의 PDF 병합 (페이지 크기 정규화 포함).
  * 배열 순서가 결과 PDF의 페이지 순서를 결정.
+ *
+ * 서로 다른 페이지 크기의 문서를 병합해도 결과 페이지가 제각각으로
+ * 섞이지 않도록, 모든 페이지를 공통 타깃 박스에 종횡비 보존·중앙
+ * 정렬(letterbox)로 통일한다. 단일 문서/동일 크기 병합은 재스케일
+ * 없이 기존과 동일하게 처리한다(merge-normalize.ts 의 빠른 경로).
  *
  * @param bytesArray 병합할 PDF 바이트 배열
  * @returns 병합된 PDF 바이트
@@ -91,13 +99,8 @@ export async function mergeDocuments(bytesArray: Uint8Array[]): Promise<Uint8Arr
     return bytesArray[0].slice()
   }
 
-  const merged = await PDFDocument.create()
-  for (const bytes of bytesArray) {
-    const doc = await PDFDocument.load(bytes, { ignoreEncryption: false })
-    const pages = await merged.copyPages(doc, doc.getPageIndices())
-    pages.forEach((p) => merged.addPage(p))
-  }
-  return merged.save()
+  // 다중 문서: 페이지 크기 정규화 병합.
+  return mergeNormalized(bytesArray)
 }
 
 /**
@@ -125,23 +128,40 @@ export async function rotatePage(
   return doc.save()
 }
 
+/** replacement 에 WinAnsi(표준 14 폰트) 범위를 벗어나는 문자가 있는가. */
+function hasNonWinAnsi(text: string): boolean {
+  // Helvetica(WinAnsi)는 대략 U+00FF 이하만 안전. 그 외(한글/CJK/이모지 등)
+  // 가 하나라도 있으면 임베드 폰트가 필요하다.
+  for (const ch of text) {
+    if (ch.codePointAt(0)! > 0xff) return true
+  }
+  return false
+}
+
 /**
- * 페이지 내 텍스트 교체.
+ * 페이지 내 텍스트 교체 (R3 텍스트 편집).
  *
  * pdf-lib은 기존 텍스트를 직접 수정할 수 없으므로,
- * 1) targetText 영역을 흰 사각형으로 덮고,
- * 2) replacementText를 표준 폰트(Helvetica)로 동일 위치에 그린다.
+ * 1) target 영역을 흰 사각형으로 덮고(redact),
+ * 2) replacement 를 동일 위치에 새로 그린다.
+ *
+ * 폰트 선택:
+ *  - 한글/CJK/유니코드 문자가 포함되면 `@pdf-lib/fontkit` 으로 Pretendard
+ *    TTF 를 서브셋 임베드해 그린다(tofu 방지).
+ *  - 폰트 로드/임베드 실패 시 StandardFonts.Helvetica 로 폴백한다.
+ *    이 경우 영문/숫자는 정상 표시되지만 비-WinAnsi 문자는 깨질 수 있어
+ *    `warning` 을 함께 반환한다(영문만 있으면 폴백이어도 무해).
  *
  * 한계:
- *  - 텍스트 위치는 pdfjs로 추출한 좌표에 의존 (별도 호출 필요)
- *  - 폰트 매칭 불완전 (한글/특수문자/원본 폰트 유실 가능)
- *  - 다중 라인 텍스트 교체는 단일 라인 가정
+ *  - 텍스트 위치는 pdfjs로 추출한 좌표(rect)에 의존 (호출 측 책임).
+ *  - 원본 폰트/스타일은 보존되지 않음(Pretendard 또는 Helvetica로 통일).
+ *  - 단일 라인 가정. redact 는 흰색 — 배경이 흰색이 아니면 잔흔 가능.
  *
  * @param bytes PDF 바이트
  * @param pageIndex 0-based
  * @param target 교체 대상 텍스트 좌표 정보
  * @param replacement 새 텍스트
- * @returns 텍스트 교체 후 PDF 바이트 + 교체 성공 여부
+ * @returns 교체 후 PDF 바이트 + 교체 성공 여부 + (폴백 시) 경고
  */
 export async function replaceTextAtRect(
   bytes: Uint8Array,
@@ -159,13 +179,24 @@ export async function replaceTextAtRect(
     fontSize?: number
   },
   replacement: string,
-): Promise<{ bytes: Uint8Array; replaced: boolean }> {
+): Promise<{ bytes: Uint8Array; replaced: boolean; warning?: string }> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: false })
   if (pageIndex < 0 || pageIndex >= doc.getPageCount()) {
     throw new Error(`OPERATION_FAILED: 페이지 인덱스 ${pageIndex} 범위 초과.`)
   }
   const page = doc.getPage(pageIndex)
-  const font = await doc.embedFont(StandardFonts.Helvetica)
+
+  // 폰트 선택: 한글 폰트 임베드 시도 → 실패 시 Helvetica 폴백.
+  let font: PDFFont | null = await embedKoreanFont(doc)
+  let warning: string | undefined
+  if (!font) {
+    font = await doc.embedFont(StandardFonts.Helvetica)
+    // 임베드 실패 + 비-WinAnsi 문자 → 깨질 수 있음을 알린다.
+    if (hasNonWinAnsi(replacement)) {
+      warning =
+        '한글 폰트를 불러오지 못해 일부 문자가 깨질 수 있습니다(영문/숫자는 정상).'
+    }
+  }
 
   // 1) 기존 텍스트 영역을 흰 사각형으로 덮기
   page.drawRectangle({
@@ -189,7 +220,7 @@ export async function replaceTextAtRect(
     maxWidth: target.width,
   })
 
-  return { bytes: await doc.save(), replaced: true }
+  return { bytes: await doc.save(), replaced: true, warning }
 }
 
 /**

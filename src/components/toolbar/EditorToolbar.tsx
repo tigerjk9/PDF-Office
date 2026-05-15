@@ -115,7 +115,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
   return (
     <>
       <div
-        className="flex h-11 flex-shrink-0 items-center gap-1 overflow-x-auto border-b bg-white px-3"
+        className="flex h-10 flex-shrink-0 items-center gap-0.5 overflow-x-auto border-b border-border bg-background px-2"
         role="toolbar"
         aria-label="페이지 편집 툴바"
       >
@@ -133,7 +133,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           disabled={!canRedo}
         />
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* 이동 버튼 (단일 선택만) */}
         <ToolbarButton
@@ -161,7 +161,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           disabled={!singleSelected || !canMoveDown}
         />
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* 회전 (단일 + 다중 선택 — P1-6) */}
         <ToolbarButton
@@ -175,7 +175,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           disabled={!hasSelection}
         />
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* 삭제 (확인 다이얼로그 경유 — P1-8) */}
         <Tooltip>
@@ -183,7 +183,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
               onClick={handleDelete}
               disabled={!hasSelection}
               aria-label={`선택한 ${selectedPages.length}개 페이지 삭제`}
@@ -196,7 +196,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           </TooltipContent>
         </Tooltip>
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* P2-5: 선택 페이지 추출 / 빈 페이지 삽입 / 다른 문서 페이지 삽입 */}
         <ToolbarButton
@@ -224,7 +224,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           />
         )}
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* P2-8: 워터마크 */}
         <ToolbarButton
@@ -234,7 +234,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
           disabled={false}
         />
 
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
         {/* 병합 진입점 */}
         {documents.length >= 2 && (
@@ -245,26 +245,27 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
               onClick={() => setMergeOpen(true)}
               disabled={false}
             />
-            <Separator orientation="vertical" className="mx-1 h-5" />
+            <Separator orientation="vertical" className="mx-1 h-4" />
           </>
         )}
 
         {/* 선택 상태 표시 */}
         {hasSelection && (
-          <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground">
-            {selectedPages.length}개 페이지 선택됨
+          <span className="ml-1.5 flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary-soft px-2 py-1 text-2xs font-medium text-primary">
+            <span className="tabular-nums">{selectedPages.length}</span>
+            개 선택됨
           </span>
         )}
 
         <div className="flex-1" />
 
-        {/* 내보내기 */}
+        {/* 내보내기 — 주된 결과물이므로 outline(주된 툴) 위계 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 whitespace-nowrap text-xs"
+              className="ml-1 whitespace-nowrap"
               onClick={handleExport}
               aria-label="PDF 다운로드"
             >
@@ -309,7 +310,7 @@ function ToolbarButton({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 flex-shrink-0 text-muted-foreground"
+          className="h-8 w-8 flex-shrink-0"
           onClick={onClick}
           disabled={disabled}
           aria-label={label}

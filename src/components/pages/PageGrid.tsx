@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageThumbnail, type SelectModifier } from '@/components/pages/PageThumbnail'
 import { usePageManager } from '@/hooks/usePageManager'
 import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
+import { cn } from '@/lib/utils'
 import type { PageIndex } from '@/lib/types'
 
 interface PageGridProps {
@@ -21,9 +22,10 @@ interface PageGridProps {
  *  - Ctrl/Cmd 클릭: 토글, anchor 갱신
  *  - Shift 클릭: anchor ~ 현재 인덱스 범위 선택
  *
- * 순서 변경 (P1-7):
- *  - 드래그 핸들 → 네이티브 HTML5 DnD → usePageManager.movePage
- *  - 드롭 위치 인디케이터(before/after) 표시
+ * 순서 변경 (R2-5):
+ *  - 썸네일 전체를 드래그(작은 핸들 의존 제거) → 네이티브 HTML5 DnD →
+ *    usePageManager.movePage (엔진 동결 계약 소비, 수정 없음).
+ *  - 페이지 사이 삽입 인디케이터(before/after) 표시.
  */
 export function PageGrid({ onRequestDelete }: PageGridProps) {
   const activeDoc = usePdfStore(selectActiveDoc)
@@ -121,10 +123,16 @@ export function PageGrid({ onRequestDelete }: PageGridProps) {
     selected: selectedPages.includes(p.index),
   }))
 
+  const isDragging = draggingIndex != null
+
   return (
     <ScrollArea className="h-full">
       <div
-        className="grid grid-cols-2 gap-2 p-2"
+        className={cn(
+          'grid grid-cols-2 gap-2.5 p-2.5',
+          // 드래그 중에는 텍스트 선택을 막아 깔끔한 이동 경험
+          isDragging && 'select-none',
+        )}
         role="listbox"
         aria-label="페이지 썸네일"
         aria-multiselectable
@@ -151,6 +159,7 @@ export function PageGrid({ onRequestDelete }: PageGridProps) {
               onSelectModified={handleSelectModified}
               onRotate={handleRotate}
               onDelete={handleDelete}
+              reorderable
               onDragStartPage={handleDragStart}
               onDragEndPage={handleDragEnd}
               onDragOverPage={handleDragOver}

@@ -97,15 +97,17 @@ export function DropZone({
   const rootClass = useMemo(
     () =>
       cn(
-        'group relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-white transition-all',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        isDragActive && !isDragReject && 'border-primary bg-primary/5',
-        isDragReject && 'border-destructive bg-destructive/5',
+        'group relative bg-background transition-colors duration-base ease-out-quart',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        variant === 'full'
+          ? 'flex flex-col gap-4 rounded-lg border border-dashed p-7 sm:p-9'
+          : 'flex flex-col gap-2 rounded-md border border-dashed p-3',
+        isDragActive && !isDragReject && 'border-primary bg-primary-soft',
+        isDragReject && 'border-destructive bg-destructive-soft',
         !isDragActive &&
           !isDragReject &&
-          'border-gray-300 hover:border-primary/60',
+          'border-border-strong hover:border-primary/55 hover:bg-muted',
         isLoading && 'cursor-not-allowed opacity-60',
-        variant === 'full' ? 'min-h-[280px] p-10' : 'p-4',
       ),
     [isDragActive, isDragReject, isLoading, variant],
   )
@@ -122,67 +124,76 @@ export function DropZone({
           }}
           disabled={isLoading}
           className={cn(
-            'inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50',
+            'inline-flex h-8 w-full select-none items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors duration-fast ease-out-quart hover:bg-primary-hover active:translate-y-px active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50',
           )}
           aria-label="업로드할 PDF 파일 선택"
         >
           <FilePlus2 className="h-4 w-4" aria-hidden />
           <span>PDF 추가</span>
         </button>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          또는 파일을 여기에 끌어다 놓으세요
+        <p className="text-center text-2xs text-muted-foreground">
+          또는 여기에 끌어다 놓기
         </p>
       </div>
     )
   }
 
   return (
-    <div {...getRootProps({ className: rootClass, role: 'button', tabIndex: 0 })}>
+    <div
+      {...getRootProps({ className: rootClass, role: 'button', tabIndex: 0 })}
+    >
       <input {...getInputProps()} aria-label="PDF 파일 업로드" />
-      <div
-        className={cn(
-          'mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-colors',
-          isDragActive && !isDragReject
-            ? 'bg-primary/15 text-primary'
-            : 'bg-gray-100 text-gray-500',
-        )}
-      >
-        <Upload className="h-8 w-8" aria-hidden />
-      </div>
-      <h2 className="text-lg font-semibold text-foreground">
-        {isDragActive
-          ? isDragReject
-            ? '지원하지 않는 파일 형식입니다'
-            : 'PDF 파일을 여기에 놓으세요'
-          : 'PDF 파일을 끌어다 놓아 편집을 시작하세요'}
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        또는{' '}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            open()
-          }}
-          className="font-medium text-primary underline-offset-2 hover:underline focus:outline-none"
+      <div className="flex items-start gap-3.5">
+        <span
+          className={cn(
+            'mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md border transition-colors duration-base',
+            isDragActive && !isDragReject
+              ? 'border-primary/40 bg-primary/10 text-primary'
+              : isDragReject
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-border bg-muted text-muted-foreground',
+          )}
+          aria-hidden
         >
-          클릭하여 파일 선택
-        </button>{' '}
-        — PDF 전용, 파일당 최대 {formatBytes(maxSizeBytes, 0)}
-      </p>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        파일은 브라우저를 벗어나지 않으며 모든 편집은 로컬에서 처리됩니다.
-      </p>
+          <Upload className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold tracking-[-0.012em] text-foreground">
+            {isDragActive
+              ? isDragReject
+                ? '지원하지 않는 파일 형식입니다'
+                : 'PDF 파일을 여기에 놓으세요'
+              : 'PDF 파일을 끌어다 놓으세요'}
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            또는{' '}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                open()
+              }}
+              className="rounded-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              클릭하여 선택
+            </button>
+            <span className="text-muted-foreground">
+              {' '}
+              · PDF 전용 · 파일당 최대 {formatBytes(maxSizeBytes, 0)}
+            </span>
+          </p>
+        </div>
+      </div>
       {isLoading && (
         <div
-          className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"
+          className="flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground"
           aria-live="polite"
         >
-          <div
-            className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"
+          <span
+            className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-primary border-t-transparent"
             aria-hidden
           />
-          <span>파일을 처리하는 중...</span>
+          <span>파일을 처리하는 중…</span>
         </div>
       )}
     </div>

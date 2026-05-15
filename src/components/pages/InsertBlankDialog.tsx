@@ -95,9 +95,9 @@ export function InsertBlankDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm gap-0 p-0">
-        <DialogHeader className="space-y-1.5 p-6 text-left">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <FilePlus className="h-4 w-4" aria-hidden />
+        <DialogHeader className="gap-1.5 p-5">
+          <DialogTitle className="flex items-center gap-2">
+            <FilePlus className="h-4 w-4 text-muted-foreground" aria-hidden />
             빈 페이지 삽입
           </DialogTitle>
           <DialogDescription>
@@ -105,10 +105,10 @@ export function InsertBlankDialog({
             페이지입니다.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-1.5 px-6 pb-2">
+        <div className="space-y-1.5 px-5 pb-1">
           <label
             htmlFor="blank-at-position"
-            className="text-[11px] font-medium text-muted-foreground"
+            className="text-2xs font-medium text-muted-foreground"
           >
             삽입 위치 (1 ~ {pageCount + 1})
           </label>
@@ -120,11 +120,11 @@ export function InsertBlankDialog({
             onChange={(e) =>
               setAtInput(e.target.value.replace(/[^0-9]/g, ''))
             }
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs tabular-nums ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs tabular-nums transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="빈 페이지 삽입 위치"
           />
         </div>
-        <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-4">
+        <DialogFooter className="gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
           <Button
             variant="outline"
             size="sm"

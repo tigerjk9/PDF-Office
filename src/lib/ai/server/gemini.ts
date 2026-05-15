@@ -10,7 +10,8 @@
 
 import type { AIContentPart } from '../messages'
 
-export const GEMINI_MODEL = 'gemini-1.5-pro-latest'
+// 현행 권장 모델 — 비전(inline_data) 입력 지원 확인됨
+export const GEMINI_MODEL = 'gemini-2.5-flash'
 
 const GEMINI_ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`

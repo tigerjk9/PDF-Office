@@ -65,31 +65,34 @@ export function PasswordDialog({
       }}
     >
       <DialogContent className="max-w-sm gap-0 p-0">
-        <DialogHeader className="space-y-2 p-6 text-left">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Lock className="h-4 w-4" aria-hidden />
+        <DialogHeader className="gap-2.5 p-5">
+          <div className="flex items-start gap-3">
+            <span
+              className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary"
+              aria-hidden
+            >
+              <Lock className="h-3.5 w-3.5" />
             </span>
-            <DialogTitle className="text-base">
-              암호로 보호된 PDF
-            </DialogTitle>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <DialogTitle>암호로 보호된 PDF</DialogTitle>
+              <DialogDescription>
+                {fileName ? (
+                  <>
+                    <span className="font-medium text-foreground">
+                      {fileName}
+                    </span>
+                    은(는) 비밀번호로 보호되어 있습니다. 열려면 비밀번호를
+                    입력하세요.
+                  </>
+                ) : (
+                  '이 PDF는 비밀번호로 보호되어 있습니다. 열려면 비밀번호를 입력하세요.'
+                )}
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription className="pt-1">
-            {fileName ? (
-              <>
-                <span className="font-medium text-foreground">
-                  {fileName}
-                </span>
-                은(는) 비밀번호로 보호되어 있습니다. 열려면 비밀번호를
-                입력하세요.
-              </>
-            ) : (
-              '이 PDF는 비밀번호로 보호되어 있습니다. 열려면 비밀번호를 입력하세요.'
-            )}
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 px-6 pb-2">
+        <div className="space-y-2 px-5 pb-1">
           <input
             type="password"
             value={password}
@@ -103,15 +106,18 @@ export function PasswordDialog({
             placeholder="PDF 비밀번호"
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="PDF 비밀번호"
           />
           {retryFailed && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-[11px] text-destructive"
+              className="flex items-start gap-2 rounded-md border border-destructive-soft-border bg-destructive-soft p-2 text-2xs text-destructive"
             >
-              <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+              <AlertCircle
+                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+                aria-hidden
+              />
               <span>
                 비밀번호가 올바르지 않습니다. 다시 확인하고 입력하세요.
               </span>
@@ -119,7 +125,7 @@ export function PasswordDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-4">
+        <DialogFooter className="gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
           <Button
             variant="outline"
             size="sm"

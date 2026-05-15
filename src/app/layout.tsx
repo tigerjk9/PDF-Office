@@ -1,6 +1,28 @@
 import type { Metadata } from 'next'
+import localFont from 'next/font/local'
 import { Toaster } from 'sonner'
 import './globals.css'
+
+/**
+ * Pretendard 가변 폰트 self-host (R2-3).
+ *
+ * `next/font/local` 로 npm `pretendard` 패키지의 가변 woff2 를 인라인·프리로드한다.
+ * - FOUT 최소화: `display: swap` + 자동 fallback 메트릭 보정(adjustFontFallback).
+ * - CSS 변수 `--font-pretendard` 로 노출 → globals/tailwind 의 sans 스택 선두.
+ */
+const pretendard = localFont({
+  src: '../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2',
+  weight: '45 920',
+  style: 'normal',
+  display: 'swap',
+  variable: '--font-pretendard',
+  fallback: [
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
+    'system-ui',
+    'sans-serif',
+  ],
+})
 
 export const metadata: Metadata = {
   title: 'PDF Office — 브라우저 기반 PDF 편집기',
@@ -14,10 +36,28 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <body className="min-h-screen bg-gray-50 font-sans antialiased text-foreground">
+    <html lang="ko" className={pretendard.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-canvas font-sans text-foreground antialiased">
         {children}
-        <Toaster richColors closeButton position="top-center" />
+        <Toaster
+          position="top-center"
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast:
+                'rounded-md border border-border bg-background text-foreground shadow-md',
+              title: 'text-sm font-medium',
+              description: 'text-xs text-muted-foreground',
+              actionButton:
+                'rounded-md bg-primary text-primary-foreground text-xs',
+              cancelButton:
+                'rounded-md bg-muted text-muted-foreground text-xs',
+              error:
+                'border-destructive/30 [&_[data-icon]]:text-destructive',
+              success: '[&_[data-icon]]:text-success',
+            },
+          }}
+        />
       </body>
     </html>
   )

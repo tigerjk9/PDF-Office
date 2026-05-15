@@ -11,7 +11,8 @@
 
 import type { AIContentPart } from '../messages'
 
-export const CLAUDE_MODEL = 'claude-opus-4-7'
+// 문서변환 품질·저비용·비전(image block) 지원 — 사용자 선택 모델
+export const CLAUDE_MODEL = 'claude-sonnet-4-6'
 
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_VERSION = '2023-06-01'

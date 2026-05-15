@@ -50,21 +50,33 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm gap-0 p-0">
-        <DialogHeader className="space-y-2 p-6 text-left">
-          <div className="flex items-center gap-2">
+      <DialogContent
+        className="max-w-sm gap-0 p-0"
+        aria-describedby={description ? undefined : 'confirm-no-desc'}
+      >
+        <DialogHeader className="gap-2.5 p-5">
+          <div className="flex items-start gap-3">
             {destructive && (
-              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                <AlertTriangle className="h-4 w-4" aria-hidden />
+              <span
+                className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-destructive-soft text-destructive"
+                aria-hidden
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
               </span>
             )}
-            <DialogTitle className="text-base">{title}</DialogTitle>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <DialogTitle>{title}</DialogTitle>
+              {description ? (
+                <DialogDescription>{description}</DialogDescription>
+              ) : (
+                <span id="confirm-no-desc" className="sr-only">
+                  {title}
+                </span>
+              )}
+            </div>
           </div>
-          {description && (
-            <DialogDescription className="pt-1">{description}</DialogDescription>
-          )}
         </DialogHeader>
-        <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-4">
+        <DialogFooter className="gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
           <Button
             variant="outline"
             size="sm"

@@ -122,9 +122,9 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] w-full max-w-2xl flex-col gap-0 p-0">
-        <DialogHeader className="border-b px-6 py-4 text-left">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <GitMerge className="h-4 w-4" aria-hidden />
+        <DialogHeader className="gap-1.5 border-b border-border px-5 py-4">
+          <DialogTitle className="flex items-center gap-2">
+            <GitMerge className="h-4 w-4 text-muted-foreground" aria-hidden />
             문서 병합
           </DialogTitle>
           <DialogDescription>
@@ -134,12 +134,12 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 md:grid-cols-2">
           {/* 병합 대상 (순서 = 결과 순서) */}
-          <div className="flex min-h-0 flex-col border-b md:border-b-0 md:border-r">
-            <div className="flex items-center justify-between px-5 py-3">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="flex min-h-0 flex-col border-b border-border md:border-b-0 md:border-r">
+            <div className="flex h-10 items-center justify-between px-4">
+              <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 병합 순서
               </span>
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="default">
                 {selectedDocs.length}개 · {totalPages}p
               </Badge>
             </div>
@@ -150,14 +150,14 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
                   오른쪽 목록에서 병합할 문서를 추가하세요.
                 </div>
               ) : (
-                <ol className="space-y-1.5 p-3">
+                <ol className="space-y-1 p-2.5">
                   {selectedDocs.map((doc, idx) => (
                     <li
                       key={doc.id}
-                      className="flex items-center gap-2 rounded-md border bg-white px-2 py-2 text-xs"
+                      className="flex items-center gap-2.5 rounded-md border border-border bg-background px-2.5 py-2 text-xs"
                     >
                       <span
-                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-primary text-[10px] font-semibold text-primary-foreground"
+                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[5px] bg-primary text-2xs font-semibold tabular-nums text-primary-foreground"
                         aria-hidden
                       >
                         {idx + 1}
@@ -170,7 +170,7 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
                         <div className="truncate font-medium text-foreground">
                           {doc.name}
                         </div>
-                        <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                           {doc.pageCount}p · {formatBytes(doc.sizeBytes)}
                         </div>
                       </div>
@@ -214,27 +214,27 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
 
           {/* 추가 가능한 문서 */}
           <div className="flex min-h-0 flex-col">
-            <div className="px-5 py-3">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex h-10 items-center px-4">
+              <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 추가 가능한 문서
               </span>
             </div>
             <Separator />
             <ScrollArea className="min-h-0 flex-1">
               {availableDocs.length === 0 ? (
-                <div className="px-5 py-10 text-center text-xs text-muted-foreground">
+                <div className="px-4 py-10 text-center text-xs text-muted-foreground">
                   모든 문서가 병합 목록에 포함되었습니다.
                 </div>
               ) : (
-                <ul className="space-y-1.5 p-3">
+                <ul className="space-y-1 p-2.5">
                   {availableDocs.map((doc) => (
                     <li key={doc.id}>
                       <button
                         type="button"
                         onClick={() => addToMerge(doc.id)}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded-md border border-transparent px-2 py-2 text-left text-xs transition-colors',
-                          'hover:border-border hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-xs transition-colors duration-fast',
+                          'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         )}
                         aria-label={`${doc.name} 병합 목록에 추가`}
                       >
@@ -246,11 +246,11 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
                           <div className="truncate font-medium text-foreground">
                             {doc.name}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-muted-foreground">
+                          <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                             {doc.pageCount}p · {formatBytes(doc.sizeBytes)}
                           </div>
                         </div>
-                        <Plus className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <Plus className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
                       </button>
                     </li>
                   ))}
@@ -262,11 +262,11 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
 
         <Separator />
 
-        <DialogFooter className="flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <DialogFooter className="flex-col gap-3 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex w-full flex-col gap-1 sm:max-w-xs">
             <label
               htmlFor="merge-output-name"
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-2xs font-medium text-muted-foreground"
             >
               출력 파일명 (선택)
             </label>
@@ -276,7 +276,7 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
               value={outputName}
               onChange={(e) => setOutputName(e.target.value)}
               placeholder="merged.pdf"
-              className="h-9 rounded-md border border-input bg-background px-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 rounded-md border border-input bg-background px-3 text-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -310,7 +310,7 @@ export function MergeDialog({ open, onOpenChange }: MergeDialogProps) {
         </DialogFooter>
         {mergeList.length < 2 && (
           <p
-            className="px-6 pb-4 text-[11px] text-muted-foreground"
+            className="border-t border-border bg-muted/40 px-5 py-2.5 text-2xs text-muted-foreground"
             role="note"
           >
             병합하려면 2개 이상의 문서를 목록에 추가하세요.

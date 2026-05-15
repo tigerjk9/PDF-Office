@@ -2,75 +2,443 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * Pretendard (R2-3): `next/font/local` 로 self-host (layout.tsx 참조).
+ * 로딩/프리로드/폴백 메트릭 보정은 next/font 가 처리하며 여기서는
+ * `--font-pretendard` CSS 변수만 폰트 스택 선두로 소비한다.
+ * ------------------------------------------------------------------------- */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* -------------------------------------------------------------------
+     * 디자인 토큰 — 프로 도구형 (Linear/Raycast 계열) · 라이트 (R2-4)
+     *
+     * OKLCH 기반. 순수 #fff/#000 금지 — 모든 뉴트럴을 브랜드 휴(262, 청보라)
+     * 쪽으로 미세 틴트(chroma 0.004~0.012)해 잠재적 통일감을 만든다.
+     * 액센트는 단 하나(--accent-base, indigo 계열)만, 절제 사용한다.
+     *
+     * shadcn 토큰은 `<channel>` 형태가 아닌 완성된 색으로 정의하고
+     * tailwind.config 에서 `var()` 를 그대로 색으로 받는다(HSL 래핑 제거).
+     * ----------------------------------------------------------------- */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* 표면 / 텍스트 (뉴트럴 — 살짝 쿨 틴트) */
+    --canvas: oklch(98.4% 0.003 264);        /* 앱 바깥 배경(작업 캔버스) */
+    --background: oklch(99.4% 0.0015 264);   /* 패널/표면 기본 */
+    --foreground: oklch(24% 0.02 264);       /* 본문 텍스트 */
+    --elevated: oklch(100% 0 0);             /* 카드/오버레이(드물게) */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --muted: oklch(96.6% 0.004 264);         /* 보조 표면(hover/zebra) */
+    --muted-foreground: oklch(52% 0.018 264);/* 보조 텍스트 */
+    --subtle: oklch(94% 0.005 264);          /* 더 흐린 표면(스켈레톤 등) */
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --border: oklch(91.5% 0.005 264);        /* 기본 구분선 */
+    --border-strong: oklch(86% 0.008 264);   /* 강조 구분선/입력 테두리 */
+    --input: oklch(89% 0.006 264);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* 액센트 — 단 하나. indigo. CTA/포커스/선택만. */
+    --accent-base: oklch(54% 0.205 264);
+    --accent-hover: oklch(49% 0.205 264);
+    --accent-active: oklch(44% 0.2 264);
+    --accent-fg: oklch(99% 0.01 264);
+    --accent-soft: oklch(95.5% 0.03 264);    /* 액센트 연한 배경(선택 표면) */
+    --accent-soft-border: oklch(85% 0.07 264);
+    --ring: oklch(54% 0.205 264);
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* 위험(파괴적) — 절제된 레드, 청보라 뉴트럴과 충돌 없는 채도 */
+    --danger: oklch(55% 0.205 22);
+    --danger-hover: oklch(49% 0.205 22);
+    --danger-fg: oklch(99% 0.01 22);
+    --danger-soft: oklch(95% 0.04 22);
+    --danger-soft-border: oklch(85% 0.08 22);
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* 성공(보조 시맨틱, 최소 사용) */
+    --success: oklch(56% 0.13 155);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* shadcn 호환 별칭 — 컴포넌트가 기대하는 토큰명 매핑 */
+    --card: var(--background);
+    --card-foreground: var(--foreground);
+    --popover: var(--elevated);
+    --popover-foreground: var(--foreground);
+    --primary: var(--accent-base);
+    --primary-foreground: var(--accent-fg);
+    --secondary: var(--muted);
+    --secondary-foreground: var(--foreground);
+    --accent: var(--muted);
+    --accent-foreground: var(--foreground);
+    --destructive: var(--danger);
+    --destructive-foreground: var(--danger-fg);
 
     --radius: 0.5rem;
+
+    /* 모션 토큰 — 지수형 ease-out, transform/opacity 전용 */
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 320ms;
+
+    /* 엘리베이션 — 미묘하게. "보이면 너무 강한 것" */
+    --shadow-sm: 0 1px 2px oklch(24% 0.02 264 / 0.06);
+    --shadow-md: 0 4px 12px -2px oklch(24% 0.02 264 / 0.08),
+      0 2px 6px -2px oklch(24% 0.02 264 / 0.05);
+    --shadow-lg: 0 12px 32px -6px oklch(24% 0.02 264 / 0.12),
+      0 4px 12px -4px oklch(24% 0.02 264 / 0.07);
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  * {
+    border-color: var(--border);
+  }
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  body {
+    background-color: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-pretendard), 'Apple SD Gothic Neo',
+      'Malgun Gothic', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv01';
+    font-kerning: normal;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+  /* 숫자 UI(페이지 번호/줌%/크기 등)는 폭이 흔들리지 않도록 tabular */
+  .tabular-nums,
+  input[inputmode='numeric'],
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+  /* 포커스 링 — 키보드 사용자에게만, 일관된 액센트 링 */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+  /* 선택 영역 — 액센트 톤 */
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--accent-active);
+  }
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  /* 얇고 절제된 스크롤바 (도구형 밀도) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@layer utilities {
+  /* ---------------------------------------------------------------------
+   * Radix data-state 전이 (tailwindcss-animate 미설치 → 자체 구현).
+   * dialog/sheet/tooltip/tabs 가 쓰는 animate-in / fade-in-0 / zoom-in-95 /
+   * slide-* / data-[state=*]:duration-* 유틸을 transform·opacity 만으로
+   * 지수형 ease 곡선과 함께 정의한다. (R2-4: 의미 있는 상태 모션)
+   * --------------------------------------------------------------------- */
+  .animate-in {
+    animation-name: enter;
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out-expo);
+    animation-fill-mode: both;
   }
-  body {
-    @apply bg-background text-foreground;
+  .animate-out {
+    animation-name: exit;
+    animation-duration: 150ms;
+    animation-timing-function: var(--ease-out-quart);
+    animation-fill-mode: both;
+  }
+  .fade-in-0 {
+    --enter-opacity: 0;
+  }
+  .fade-out-0 {
+    --exit-opacity: 0;
+  }
+  .zoom-in-95 {
+    --enter-scale: 0.95;
+  }
+  .zoom-out-95 {
+    --exit-scale: 0.95;
+  }
+  .slide-in-from-top {
+    --enter-translate-y: -100%;
+  }
+  .slide-out-to-top {
+    --exit-translate-y: -100%;
+  }
+  .slide-in-from-bottom {
+    --enter-translate-y: 100%;
+  }
+  .slide-out-to-bottom {
+    --exit-translate-y: 100%;
+  }
+  .slide-in-from-left {
+    --enter-translate-x: -100%;
+  }
+  .slide-out-to-left {
+    --exit-translate-x: -100%;
+  }
+  .slide-in-from-right {
+    --enter-translate-x: 100%;
+  }
+  .slide-out-to-right {
+    --exit-translate-x: 100%;
+  }
+  .duration-200 {
+    animation-duration: 200ms;
+  }
+  .duration-300 {
+    animation-duration: 300ms;
+  }
+  .duration-500 {
+    animation-duration: 320ms;
+  }
+
+  @keyframes enter {
+    from {
+      opacity: var(--enter-opacity, 1);
+      transform: translate3d(
+          var(--enter-translate-x, 0),
+          var(--enter-translate-y, 0),
+          0
+        )
+        scale(var(--enter-scale, 1));
+    }
+  }
+  @keyframes exit {
+    to {
+      opacity: var(--exit-opacity, 1);
+      transform: translate3d(
+          var(--exit-translate-x, 0),
+          var(--exit-translate-y, 0),
+          0
+        )
+        scale(var(--exit-scale, 1));
+    }
+  }
+}
+
+@layer components {
+  /* ---------------------------------------------------------------------
+   * 1회 오케스트레이션된 로드 리빌 (R2-4 모션)
+   * 컨테이너에 .reveal-group, 자식에 .reveal + style="--i:n"
+   * --------------------------------------------------------------------- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: reveal-in var(--dur-slow) var(--ease-out-quart) forwards;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  @keyframes reveal-in {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* 썸네일/페이지 이미지 페이드인 (R2-6 — pop-in 대신 차분히) */
+  .media-fade {
+    animation: media-fade-in var(--dur-base) var(--ease-out-quart);
+  }
+  @keyframes media-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* 절제된 스켈레톤 — 네온/펄스 남발 대신 부드러운 횡단 셰이드 (R2-6) */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--subtle);
+  }
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(100% 0 0 / 0.55),
+      transparent
+    );
+    animation: skeleton-sweep 1.4s var(--ease-out-quart) infinite;
+  }
+  @keyframes skeleton-sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * Markdown 출력 타이포그래피 (@tailwindcss/typography 미설치 → 자체 정의).
+   * 변환 결과를 도구형 미학에 맞춰 또렷한 위계로 렌더한다.
+   * --------------------------------------------------------------------- */
+  .md-prose {
+    color: var(--foreground);
+    font-size: 0.875rem;
+    line-height: 1.7;
+    max-width: 72ch;
+  }
+  .md-prose > :first-child {
+    margin-top: 0;
+  }
+  .md-prose h1,
+  .md-prose h2,
+  .md-prose h3,
+  .md-prose h4 {
+    color: var(--foreground);
+    font-weight: 650;
+    letter-spacing: -0.014em;
+    line-height: 1.3;
+    margin: 1.6em 0 0.6em;
+  }
+  .md-prose h1 {
+    font-size: 1.5rem;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid var(--border);
+  }
+  .md-prose h2 {
+    font-size: 1.1875rem;
+  }
+  .md-prose h3 {
+    font-size: 1rem;
+  }
+  .md-prose h4 {
+    font-size: 0.9375rem;
+  }
+  .md-prose p,
+  .md-prose ul,
+  .md-prose ol,
+  .md-prose blockquote,
+  .md-prose pre,
+  .md-prose table {
+    margin: 0.85em 0;
+  }
+  .md-prose a {
+    color: var(--accent-base);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .md-prose strong {
+    font-weight: 650;
+    color: var(--foreground);
+  }
+  .md-prose ul,
+  .md-prose ol {
+    padding-left: 1.4em;
+  }
+  .md-prose li {
+    margin: 0.3em 0;
+  }
+  .md-prose li::marker {
+    color: var(--muted-foreground);
+  }
+  .md-prose blockquote {
+    border-left: 2px solid var(--accent-soft-border);
+    padding-left: 1em;
+    color: var(--muted-foreground);
+  }
+  .md-prose code {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+    font-size: 0.8125em;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1em 0.36em;
+  }
+  .md-prose pre {
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9em 1em;
+    overflow-x: auto;
+  }
+  .md-prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.8125rem;
+  }
+  .md-prose hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.8em 0;
+  }
+  .md-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .md-prose th,
+  .md-prose td {
+    border: 1px solid var(--border);
+    padding: 0.45em 0.7em;
+    text-align: left;
+  }
+  .md-prose th {
+    background-color: var(--muted);
+    font-weight: 600;
+  }
+  .md-prose img {
+    max-width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  /* 페이지 사이 삽입 인디케이터 (R2-5 DnD) */
+  .drop-line {
+    position: absolute;
+    z-index: 20;
+    border-radius: 999px;
+    background-color: var(--accent-base);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    pointer-events: none;
+  }
+  .drop-line::before {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background-color: var(--accent-base);
+  }
+}
+
+/* 모션 민감 사용자 존중 — 공간 이동 제거, 페이드만 유지 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
   }
 }

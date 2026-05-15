@@ -22,12 +22,13 @@ import {
   getAllPageMeta,
   WRONG_PASSWORD_PREFIX,
 } from '@/lib/pdf/loader'
-import { generateThumbnails } from '@/lib/pdf/renderer'
+import { generateThumbnails, renderPageThumbnail } from '@/lib/pdf/renderer'
 import {
   deletePages,
   reorderPages,
   mergeDocuments,
   rotatePage,
+  replaceTextAtRect,
 } from '@/lib/pdf/manipulator'
 import {
   extractPages,
@@ -656,14 +657,93 @@ export const usePdfStore = create<PdfStore>()(
                 return { success: true, document: updatedDoc }
               }
 
-              // delete / reorder / rotate 는 단일 문서 갱신
+              // editText: 단일 페이지 텍스트 교체. 문서 ID 유지 갱신 +
+              // 히스토리 push(undo 가능) + 편집된 1페이지만 증분 썸네일 재렌더
+              // (P1-9: 나머지 페이지 썸네일/메타는 그대로 보존).
               if (op.type === 'editText') {
-                // v1 MVP: 텍스트 편집은 좌표가 필요하므로 store API 단독으로는 미지원.
-                // UI는 src/lib/pdf/manipulator.replaceTextAtRect를 직접 사용해야 한다.
-                throw new Error(
-                  'OPERATION_FAILED: editText는 좌표 정보가 필요합니다. replaceTextAtRect 직접 호출 권장.',
-                )
+                const tgt = state.documents.find((d) => d.id === op.docId)
+                if (!tgt) {
+                  throw new Error('OPERATION_FAILED: 문서를 찾을 수 없습니다.')
+                }
+                if (op.pageIndex < 0 || op.pageIndex >= tgt.pageCount) {
+                  throw new Error(
+                    `OPERATION_FAILED: 페이지 인덱스 ${op.pageIndex} 범위 초과.`,
+                  )
+                }
+
+                // 작업 직전 문서 전체 스냅샷(bytes + pages + 기존 thumbnail).
+                // → undo 시 그대로 복원(편집 페이지 썸네일까지 복구, 재렌더 0장).
+                const beforeSnap: PdfDocument = {
+                  ...tgt,
+                  pages: tgt.pages.map((p) => ({ ...p })),
+                }
+
+                const { bytes: editedBytes, warning } =
+                  await replaceTextAtRect(
+                    tgt.bytes,
+                    op.pageIndex,
+                    {
+                      x: op.rect.x,
+                      y: op.rect.y,
+                      width: op.rect.width,
+                      height: op.rect.height,
+                      fontSize: op.fontSize,
+                    },
+                    op.replacementText,
+                  )
+
+                // 작업 성공(editedBytes 산출) 후에만 스냅샷 push.
+                pushHistory({
+                  docId: tgt.id,
+                  doc: beforeSnap,
+                  prevActiveDocId: state.activeDocId,
+                  prevCurrentPageIndex: state.viewer.currentPageIndex,
+                })
+
+                // ID 유지: 페이지 수/구조는 불변(텍스트만 교체)이므로
+                // pages 메타는 기존 것을 그대로 두고 bytes 만 교체한다.
+                // 편집된 페이지 썸네일은 아래에서 비동기 증분 갱신.
+                const updatedDoc: PdfDocument = {
+                  ...tgt,
+                  bytes: editedBytes,
+                  modifiedAt: Date.now(),
+                  sizeBytes: editedBytes.byteLength,
+                }
+
+                set((s) => ({
+                  documents: s.documents.map((d) =>
+                    d.id === tgt.id ? updatedDoc : d,
+                  ),
+                  selectedPages: [],
+                }))
+
+                // P1-9 증분 썸네일: 편집된 1페이지만 재렌더(fire-and-forget).
+                // 나머지 페이지 썸네일은 보존되어 재렌더 0장.
+                void renderPageThumbnail(editedBytes, op.pageIndex, 0.3)
+                  .then((dataUrl) => {
+                    set((s) => ({
+                      documents: s.documents.map((d) =>
+                        d.id !== updatedDoc.id
+                          ? d
+                          : {
+                              ...d,
+                              pages: d.pages.map((p) =>
+                                p.index === op.pageIndex
+                                  ? { ...p, thumbnail: dataUrl }
+                                  : p,
+                              ),
+                            },
+                      ),
+                    }))
+                  })
+                  .catch(() => {
+                    // 썸네일 실패는 silent — 본문 편집은 이미 반영됨.
+                  })
+
+                return { success: true, document: updatedDoc, warning }
               }
+
+              // delete / reorder / rotate 는 단일 문서 갱신
 
               const doc = state.documents.find((d) => d.id === op.docId)
               if (!doc) throw new Error('OPERATION_FAILED: 문서를 찾을 수 없습니다.')

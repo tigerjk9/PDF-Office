@@ -91,9 +91,9 @@ export function WatermarkDialog({ open, onOpenChange }: WatermarkDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm gap-0 p-0">
-        <DialogHeader className="space-y-1.5 p-6 text-left">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Stamp className="h-4 w-4" aria-hidden />
+        <DialogHeader className="gap-1.5 p-5">
+          <DialogTitle className="flex items-center gap-2">
+            <Stamp className="h-4 w-4 text-muted-foreground" aria-hidden />
             워터마크 추가
           </DialogTitle>
           <DialogDescription>
@@ -101,12 +101,12 @@ export function WatermarkDialog({ open, onOpenChange }: WatermarkDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 pb-2">
+        <div className="space-y-4 px-5 pb-1">
           {/* 텍스트 */}
           <div className="space-y-1.5">
             <label
               htmlFor="watermark-text"
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-2xs font-medium text-muted-foreground"
             >
               워터마크 텍스트
             </label>
@@ -116,18 +116,18 @@ export function WatermarkDialog({ open, onOpenChange }: WatermarkDialogProps) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="예: 대외비, DRAFT"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="워터마크 텍스트"
             />
           </div>
 
           {/* 투명도 */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-medium text-muted-foreground">
+              <label className="text-2xs font-medium text-muted-foreground">
                 투명도
               </label>
-              <span className="text-[11px] tabular-nums text-muted-foreground">
+              <span className="text-2xs tabular-nums text-muted-foreground">
                 {Math.round(opacity * 100)}%
               </span>
             </div>
@@ -145,7 +145,7 @@ export function WatermarkDialog({ open, onOpenChange }: WatermarkDialogProps) {
           <div className="space-y-1.5">
             <label
               htmlFor="watermark-rotation"
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-2xs font-medium text-muted-foreground"
             >
               회전 각도 (-180 ~ 180°)
             </label>
@@ -157,13 +157,13 @@ export function WatermarkDialog({ open, onOpenChange }: WatermarkDialogProps) {
               onChange={(e) =>
                 setRotation(e.target.value.replace(/[^0-9-]/g, ''))
               }
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs tabular-nums ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs tabular-nums transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="워터마크 회전 각도"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-4">
+        <DialogFooter className="gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
           <Button
             variant="outline"
             size="sm"
