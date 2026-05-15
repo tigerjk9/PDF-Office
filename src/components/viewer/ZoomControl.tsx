@@ -1,6 +1,14 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, MoveHorizontal } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  MoveHorizontal,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -20,8 +28,8 @@ const ZOOM_STEP = 0.1
 
 /**
  * 뷰어 상단 컨트롤바.
- * - 페이지 ◀ N / total ▶
- * - 줌 - / slider / + / fit-width / fit-page
+ * - 페이지 ◀ [입력 N] / total ▶  (직접 입력 후 Enter로 이동 — P1-14)
+ * - 줌 - / slider / + / 너비맞춤 / 페이지맞춤
  */
 export function ZoomControl() {
   const activeDoc = usePdfStore(selectActiveDoc)
@@ -32,24 +40,48 @@ export function ZoomControl() {
   const setZoom = usePdfStore((s) => s.setZoom)
   const setFitMode = usePdfStore((s) => s.setFitMode)
 
+  // 페이지 입력 임시값 (포커스 중 자유 입력, blur/Enter 시 커밋)
+  const [pageInput, setPageInput] = useState(String(currentPageIndex + 1))
+
+  // 외부에서 페이지가 바뀌면(키보드/썸네일) 입력값 동기화
+  useEffect(() => {
+    setPageInput(String(currentPageIndex + 1))
+  }, [currentPageIndex])
+
   if (!activeDoc) return null
 
   const pageCount = activeDoc.pageCount
   const goPrev = () => setCurrentPage(Math.max(0, currentPageIndex - 1))
-  const goNext = () => setCurrentPage(Math.min(pageCount - 1, currentPageIndex + 1))
-  const decZoom = () => setZoom(Math.max(MIN_ZOOM, +(zoom - ZOOM_STEP).toFixed(2)))
-  const incZoom = () => setZoom(Math.min(MAX_ZOOM, +(zoom + ZOOM_STEP).toFixed(2)))
+  const goNext = () =>
+    setCurrentPage(Math.min(pageCount - 1, currentPageIndex + 1))
+  const decZoom = () =>
+    setZoom(Math.max(MIN_ZOOM, +(zoom - ZOOM_STEP).toFixed(2)))
+  const incZoom = () =>
+    setZoom(Math.min(MAX_ZOOM, +(zoom + ZOOM_STEP).toFixed(2)))
 
   const zoomPct = Math.round(zoom * 100)
 
+  const commitPageInput = () => {
+    const parsed = parseInt(pageInput, 10)
+    if (Number.isNaN(parsed)) {
+      // 잘못된 입력 → 현재 페이지로 복구
+      setPageInput(String(currentPageIndex + 1))
+      return
+    }
+    // 1-based 입력 → 0-based, 범위 클램프
+    const clamped = Math.max(0, Math.min(pageCount - 1, parsed - 1))
+    setCurrentPage(clamped)
+    setPageInput(String(clamped + 1))
+  }
+
   return (
     <div
-      className="flex h-11 flex-shrink-0 items-center gap-2 border-b bg-white px-3"
+      className="flex h-11 flex-shrink-0 items-center gap-2 overflow-x-auto border-b bg-white px-3"
       role="toolbar"
-      aria-label="Viewer controls"
+      aria-label="뷰어 컨트롤"
     >
       {/* 페이지 네비게이션 */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-shrink-0 items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -58,65 +90,40 @@ export function ZoomControl() {
               className="h-7 w-7"
               onClick={goPrev}
               disabled={currentPageIndex === 0}
-              aria-label="Previous page"
+              aria-label="이전 페이지"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Previous page</TooltipContent>
-        </Tooltip>
-        <span
-          className="select-none px-2 text-xs tabular-nums text-muted-foreground"
-          aria-live="polite"
-        >
-          {currentPageIndex + 1} / {pageCount}
-        </span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={goNext}
-              disabled={currentPageIndex >= pageCount - 1}
-              aria-label="Next page"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Next page</TooltipContent>
-        </Tooltip>
-      </div>
-
-      <Separator orientation="vertical" className="h-5" />
-
-      {/* 줌 컨트롤 */}
-      <div className="flex flex-1 items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={decZoom}
-              disabled={zoom <= MIN_ZOOM}
-              aria-label="Zoom out"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom out</TooltipContent>
+          <TooltipContent>이전 페이지</TooltipContent>
         </Tooltip>
 
-        <div className="flex w-40 items-center">
-          <Slider
-            value={[zoom]}
-            min={MIN_ZOOM}
-            max={MAX_ZOOM}
-            step={0.05}
-            onValueChange={([v]) => setZoom(v)}
-            aria-label="Zoom level"
+        {/* 페이지 직접 입력 (P1-14) */}
+        <div className="flex select-none items-center gap-1 px-1 text-xs text-muted-foreground">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={pageInput}
+            onChange={(e) =>
+              setPageInput(e.target.value.replace(/[^0-9]/g, ''))
+            }
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commitPageInput}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                commitPageInput()
+                e.currentTarget.blur()
+              }
+              if (e.key === 'Escape') {
+                setPageInput(String(currentPageIndex + 1))
+                e.currentTarget.blur()
+              }
+            }}
+            aria-label={`현재 페이지 (전체 ${pageCount}페이지)`}
+            className="h-7 w-10 rounded border border-input bg-background text-center tabular-nums text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
+          <span className="tabular-nums">/ {pageCount}</span>
         </div>
 
         <Tooltip>
@@ -125,39 +132,89 @@ export function ZoomControl() {
               variant="ghost"
               size="icon"
               className="h-7 w-7"
+              onClick={goNext}
+              disabled={currentPageIndex >= pageCount - 1}
+              aria-label="다음 페이지"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>다음 페이지</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <Separator orientation="vertical" className="h-5 flex-shrink-0" />
+
+      {/* 줌 컨트롤 */}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 flex-shrink-0"
+              onClick={decZoom}
+              disabled={zoom <= MIN_ZOOM}
+              aria-label="축소"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>축소</TooltipContent>
+        </Tooltip>
+
+        <div className="flex w-28 flex-shrink-0 items-center sm:w-40">
+          <Slider
+            value={[zoom]}
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
+            step={0.05}
+            onValueChange={([v]) => setZoom(v)}
+            aria-label="확대/축소 비율"
+          />
+        </div>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 flex-shrink-0"
               onClick={incZoom}
               disabled={zoom >= MAX_ZOOM}
-              aria-label="Zoom in"
+              aria-label="확대"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Zoom in</TooltipContent>
+          <TooltipContent>확대</TooltipContent>
         </Tooltip>
 
-        <span className="w-12 select-none text-center text-xs tabular-nums text-muted-foreground">
+        <span className="w-12 flex-shrink-0 select-none text-center text-xs tabular-nums text-muted-foreground">
           {zoomPct}%
         </span>
       </div>
 
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical" className="h-5 flex-shrink-0" />
 
-      {/* Fit modes */}
-      <div className="flex items-center gap-1">
+      {/* 맞춤 모드 */}
+      <div className="flex flex-shrink-0 items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant={fitMode === 'fit-width' ? 'secondary' : 'ghost'}
               size="icon"
               className={cn('h-7 w-7')}
-              onClick={() => setFitMode(fitMode === 'fit-width' ? null : 'fit-width')}
-              aria-label="Fit to width"
+              onClick={() =>
+                setFitMode(fitMode === 'fit-width' ? null : 'fit-width')
+              }
+              aria-label="너비 맞춤"
               aria-pressed={fitMode === 'fit-width'}
             >
               <MoveHorizontal className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Fit width</TooltipContent>
+          <TooltipContent>너비 맞춤</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -165,14 +222,16 @@ export function ZoomControl() {
               variant={fitMode === 'fit-page' ? 'secondary' : 'ghost'}
               size="icon"
               className={cn('h-7 w-7')}
-              onClick={() => setFitMode(fitMode === 'fit-page' ? null : 'fit-page')}
-              aria-label="Fit page"
+              onClick={() =>
+                setFitMode(fitMode === 'fit-page' ? null : 'fit-page')
+              }
+              aria-label="페이지 맞춤"
               aria-pressed={fitMode === 'fit-page'}
             >
               <Maximize2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Fit page</TooltipContent>
+          <TooltipContent>페이지 맞춤</TooltipContent>
         </Tooltip>
       </div>
     </div>

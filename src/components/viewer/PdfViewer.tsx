@@ -76,7 +76,7 @@ export function PdfViewer() {
   if (!activeDoc) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
-        No document selected
+        선택된 문서가 없습니다
       </div>
     )
   }
@@ -86,13 +86,13 @@ export function PdfViewer() {
       ref={containerRef}
       className="flex h-full w-full items-start justify-center overflow-auto p-6"
       role="region"
-      aria-label="PDF viewer"
+      aria-label="PDF 뷰어"
     >
       <div className="relative inline-block">
         <canvas
           ref={canvasRef}
           className="block bg-white shadow-lg"
-          aria-label={`Page ${pageIndex + 1} of ${activeDoc.pageCount}`}
+          aria-label={`${activeDoc.pageCount}페이지 중 ${pageIndex + 1}페이지`}
         />
         {isRendering && (
           <div
@@ -100,7 +100,7 @@ export function PdfViewer() {
             aria-live="polite"
           >
             <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
-            <span className="sr-only">Rendering page</span>
+            <span className="sr-only">페이지를 렌더링하는 중</span>
           </div>
         )}
         {renderError && (
@@ -109,7 +109,7 @@ export function PdfViewer() {
             className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/90 p-4 text-center text-sm text-destructive"
           >
             <AlertCircle className="h-5 w-5" aria-hidden />
-            <p className="font-medium">Failed to render page</p>
+            <p className="font-medium">페이지를 렌더링하지 못했습니다</p>
             <p className="text-xs text-muted-foreground">{renderError}</p>
           </div>
         )}

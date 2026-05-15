@@ -30,3 +30,4 @@
 | 2026-05-14 | Next.js 16.2.6 업그레이드 | package.json | CVE-2025-66478 Vercel 배포 차단 |
 | 2026-05-14 | Turbopack canvas alias 수정 | next.config.mjs | canvas 빌드 오류 해결 |
 | 2026-05-14 | 타입 SSOT 정리 | src/types/pdf.ts | 중복 280줄 타입 제거 |
+| 2026-05-15 | P0/P1/P2 UX·기능 개선(우선순위 웨이브, 병렬 에이전트) | src/ 전체(20수정+25신규) | 평가 기반 개선: 병합UI 실연결·AI프록시/비전·IndexedDB영속·Undo/Redo·증분썸네일·DnD·단축키·반응형·한국어통일·변환범위·추출/삽입/워터마크/검색/암호해제. tsc 0·build 0·SHIP-READY |

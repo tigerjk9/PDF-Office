@@ -1,60 +1,42 @@
 /**
- * Anthropic Claude API 어댑터 (BYO Key, 브라우저 직접 호출)
+ * Claude 클라이언트 어댑터 (동일 출처 프록시 경유)
  *
- * - 모델: claude-opus-4-7
- * - 프롬프트 캐싱: system 블록에 cache_control: 'ephemeral' 적용
- * - dangerouslyAllowBrowser: true (사용자가 자신의 키로 호출하는 BYOK 모델)
+ * 이전: 브라우저에서 Anthropic SDK 직접 호출 (dangerouslyAllowBrowser,
+ * CORS·키 노출 위험). 현재: `/api/ai/convert` 프록시로 위임.
+ * 실제 Anthropic 호출은 서버(src/lib/ai/server/claude.ts)에서 수행한다.
+ *
+ * 시그니처 호환: 기존 호출부(converter.ts)의 streamWithClaude(apiKey, text)
+ * 를 그대로 유지하면서, 멀티모달 content 파트도 받을 수 있도록 확장한다.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
-
+import type { AIContentPart } from '../messages'
+import { textPart } from '../messages'
+import { CLAUDE_MODEL } from '../server/claude'
+import { streamViaProxy } from '../transport'
 import { SYSTEM_PROMPT } from '../prompt'
 
-/** Claude 모델 식별자. 변경 시 비용/품질 영향 확인 필요. */
-export const CLAUDE_MODEL = 'claude-opus-4-7'
+export { CLAUDE_MODEL }
 
 /**
- * Claude API를 스트리밍으로 호출하여 텍스트 델타를 yield 한다.
+ * Claude 변환 스트리밍 (프록시 경유). 텍스트 문자열 또는 멀티모달
+ * content 파트 배열을 입력으로 받는다.
  *
- * @param apiKey 사용자 입력 API 키 (sk-ant-...)
- * @param textContent PDF에서 추출한 텍스트 또는 분할 청크
- * @yields content_block_delta 의 text_delta 문자열
- *
- * @throws Error API 키 오류(401), rate limit(429), context length 초과 등
- *   원본 에러는 converter.ts에서 PdfError로 정규화된다.
+ * @param apiKey 사용자 BYO 키 (서버 미저장)
+ * @param input 텍스트 또는 AIContentPart[] (비전 페이지 포함 가능)
+ * @param signal 취소 신호
  */
 export async function* streamWithClaude(
   apiKey: string,
-  textContent: string,
+  input: string | AIContentPart[],
+  signal?: { aborted: boolean },
 ): AsyncGenerator<string, void, unknown> {
-  if (!apiKey) {
-    throw new Error('401: Claude API key is required')
-  }
-
-  const client = new Anthropic({
+  const content: AIContentPart[] =
+    typeof input === 'string' ? [textPart(input)] : input
+  yield* streamViaProxy({
+    provider: 'claude',
     apiKey,
-    dangerouslyAllowBrowser: true,
+    system: SYSTEM_PROMPT,
+    content,
+    signal,
   })
-
-  const stream = client.messages.stream({
-    model: CLAUDE_MODEL,
-    max_tokens: 8192,
-    // @ts-expect-error cache_control is valid at runtime but not typed in sdk@0.32
-    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-    messages: [
-      {
-        role: 'user',
-        content: textContent,
-      },
-    ],
-  })
-
-  for await (const event of stream) {
-    if (
-      event.type === 'content_block_delta' &&
-      event.delta.type === 'text_delta'
-    ) {
-      yield event.delta.text
-    }
-  }
 }

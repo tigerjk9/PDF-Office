@@ -1,34 +1,94 @@
 /**
  * PDF → Markdown 통합 변환 오케스트레이터
  *
- * 흐름:
- *   1) extractTextFromPdf(bytes) → 전체 텍스트
- *   2) splitIntoChunks(text)     → 청크 배열
- *   3) provider 어댑터 스트리밍 호출 (Claude / Gemini / OpenAI)
+ * 흐름 (P0-2 비전 폴백 + P0-3 동일 출처 프록시):
+ *   1) extractPagesForAI(bytes) → 페이지별 { text, imageBase64? }
+ *      - 텍스트 레이어가 있으면 text 사용
+ *      - 텍스트가 없으면(스캔/이미지 PDF) 페이지를 PNG로 렌더해 비전 입력
+ *   2) buildPageChunks(pages) → 멀티모달 content 파트 청크 배열
+ *   3) provider 어댑터(프록시 경유)로 스트리밍 호출
+ *      - 모든 외부 AI 호출은 `/api/ai/convert` 동일 출처 경유 (CORS·키노출 해소)
  *   4) 각 델타를 onChunk 콜백으로 전달 + 누적
- *   5) context_length 에러 발생 시 청크 크기를 절반으로 줄여 재시도
+ *   5) context_length 에러 시 텍스트 청크 크기를 절반으로 줄여 재시도
+ *
+ * BYOK: apiKey는 프록시 요청 본문으로만 전달되며 서버에 저장되지 않는다.
  */
 
 import type { AIProvider } from '@/lib/types'
 
-import { extractTextFromPdf } from './extractor'
+import type { AIContentPart } from './messages'
+import { extractPagesForAI } from './page-extractor'
 import {
   MAX_CHARS_PER_CHUNK,
-  buildUserMessage,
-  splitIntoChunks,
+  buildPageChunks,
 } from './prompt'
 import { streamWithClaude } from './providers/claude'
 import { streamWithGemini } from './providers/gemini'
 import { streamWithOpenAI } from './providers/openai'
 
+/** 변환 범위 (P2-2). 미지정/'all'이면 전체 페이지 변환. */
+export type ConvertScope = 'all' | 'current' | 'selected' | 'range'
+
+/** 변환 범위 지정 옵션 (P2-2) */
+export interface ConvertScopeOptions {
+  /** 'all'(기본)=전체, 'current'/'selected'=pages, 'range'=pageRange */
+  scope?: ConvertScope
+  /** scope='current'/'selected'일 때 변환할 0-based 페이지 인덱스 목록 */
+  pages?: number[]
+  /** scope='range'일 때 0-based 포함 범위 (start..end) */
+  pageRange?: { start: number; end: number }
+}
+
 /** 변환 중 취소 / 진행률 보고용 옵션 */
-export interface ConvertOptions {
+export interface ConvertOptions extends ConvertScopeOptions {
   /** 각 스트리밍 델타가 도착할 때마다 호출 */
   onChunk?: (delta: string, accumulated: string) => void
   /** 청크별 진행률 보고 (0.0 ~ 1.0) */
   onProgress?: (progress: number) => void
   /** AbortSignal-like: 외부에서 true로 바꾸면 즉시 중단 */
   signal?: { aborted: boolean }
+}
+
+/**
+ * scope 옵션 → 0-based 페이지 인덱스 화이트리스트로 정규화한다 (P2-2).
+ *
+ *   - 'all' / 미지정         → undefined (전체 추출 = 비용 절감 없음)
+ *   - 'current' / 'selected' → pages 배열 그대로 (중복 제거·정렬)
+ *   - 'range'                → pageRange.start..end 펼침 (start>end 보정)
+ *
+ * 빈/모순 입력은 undefined로 폴백해 "전체 변환"으로 안전하게 처리한다.
+ */
+export function resolvePageIndices(
+  opts: ConvertScopeOptions,
+): number[] | undefined {
+  const scope = opts.scope ?? 'all'
+  if (scope === 'all') return undefined
+
+  if (scope === 'range') {
+    const r = opts.pageRange
+    if (
+      !r ||
+      !Number.isInteger(r.start) ||
+      !Number.isInteger(r.end)
+    ) {
+      return undefined
+    }
+    const start = Math.max(0, Math.min(r.start, r.end))
+    const end = Math.max(r.start, r.end)
+    const out: number[] = []
+    for (let i = start; i <= end; i++) out.push(i)
+    return out.length > 0 ? out : undefined
+  }
+
+  // 'current' | 'selected'
+  const pages = opts.pages
+  if (!pages || pages.length === 0) return undefined
+  const set = new Set<number>()
+  for (const p of pages) {
+    if (Number.isInteger(p) && p >= 0) set.add(p)
+  }
+  if (set.size === 0) return undefined
+  return Array.from(set).sort((a, b) => a - b)
 }
 
 /** 사용자에게 보일 정규화된 변환 에러 */
@@ -60,40 +120,68 @@ export async function convertPdfToMarkdown(
   }
   const signal = options.signal
 
-  // 1. PDF → 텍스트
-  let fullText: string
+  // P2-2: scope → 0-based 페이지 인덱스 화이트리스트.
+  // undefined면 전체 페이지(기본). 지정 시 해당 페이지만 추출/렌더해
+  // 토큰·비용을 절감한다. 비전 폴백(P0-2)은 선택 페이지에만 적용된다.
+  const pageIndices = resolvePageIndices(options)
+
+  // 1. PDF → 페이지별 텍스트 + (필요 시) 비전 이미지
+  let pages: Awaited<ReturnType<typeof extractPagesForAI>>
   try {
-    fullText = await extractTextFromPdf(bytes)
+    pages = await extractPagesForAI(bytes, { signal, pageIndices })
   } catch (e) {
-    throw new Error(`PDF 텍스트 추출 실패: ${(e as Error).message ?? e}`)
+    const msg = (e as Error)?.message ?? String(e)
+    if (msg.toLowerCase().includes('cancel')) {
+      throw createUserError('CANCELLED')
+    }
+    throw new Error(`PDF 페이지 추출 실패: ${msg}`)
   }
 
-  if (!fullText.trim()) {
+  if (pages.length === 0) {
+    throw new Error('변환할 페이지가 없습니다.')
+  }
+
+  const hasAnyText = pages.some((p) => p.text.trim().length > 0)
+  const hasAnyImage = pages.some((p) => typeof p.imageBase64 === 'string')
+  if (!hasAnyText && !hasAnyImage) {
     throw new Error(
-      '추출된 텍스트가 없습니다. 스캔 PDF는 OCR이 필요합니다.',
+      '추출 가능한 텍스트가 없고 페이지 이미지 렌더에도 실패했습니다. ' +
+        '다른 PDF로 시도하세요.',
     )
   }
 
-  // 2. 청크 분할 + 스트리밍 호출 (필요 시 청크 크기 자동 축소)
+  // 2. 청크 분할 + 스트리밍 호출 (필요 시 텍스트 청크 크기 자동 축소)
   let maxChars = MAX_CHARS_PER_CHUNK
   let attempt = 0
   const MAX_ATTEMPTS = 3
 
-  // 청크 크기 축소를 외부 루프로 감싸 'context_length' 발생 시 재시도.
-  // 한 청크 안에서 실패하면 처음부터 다시 시작한다 (전체 일관성 보장).
   while (attempt < MAX_ATTEMPTS) {
     attempt++
     if (signal?.aborted) throw createUserError('CANCELLED')
 
-    const chunks = splitIntoChunks(fullText, maxChars)
+    const chunks = buildPageChunks(pages, maxChars)
+    if (chunks.length === 0) {
+      throw new Error(
+        '추출된 텍스트가 없습니다. 스캔 PDF는 비전 변환에 실패했습니다.',
+      )
+    }
     let accumulated = ''
 
     try {
       for (let i = 0; i < chunks.length; i++) {
         if (signal?.aborted) throw createUserError('CANCELLED')
 
-        const userMessage = buildUserMessage(chunks[i], i, chunks.length)
-        const stream = streamForProvider(provider, apiKey, userMessage)
+        const content = buildChunkContent(
+          chunks[i].content,
+          i,
+          chunks.length,
+        )
+        const stream = streamForProvider(
+          provider,
+          apiKey,
+          content,
+          signal,
+        )
 
         for await (const delta of stream) {
           if (signal?.aborted) throw createUserError('CANCELLED')
@@ -117,7 +205,7 @@ export async function convertPdfToMarkdown(
       // CANCELLED는 즉시 전파
       if (norm.code === 'CANCELLED') throw err
 
-      // context_length는 청크 크기를 줄여 재시도
+      // context_length는 텍스트 청크 크기를 줄여 재시도
       if (norm.code === 'CONTEXT_TOO_LONG' && attempt < MAX_ATTEMPTS) {
         maxChars = Math.max(8_000, Math.floor(maxChars / 2))
         continue
@@ -131,19 +219,59 @@ export async function convertPdfToMarkdown(
   throw new Error('변환 시도 횟수를 초과했습니다.')
 }
 
-/** provider 식별자 → 스트리밍 함수 디스패치 */
+/**
+ * 멀티 청크 변환 시 청크 앞에 연속성 안내 텍스트 파트를 덧붙인다.
+ * 단일 청크면 원본 그대로.
+ */
+function buildChunkContent(
+  parts: AIContentPart[],
+  index: number,
+  total: number,
+): AIContentPart[] {
+  if (total <= 1) {
+    return [
+      { type: 'text', text: 'Convert the following PDF content to Markdown.' },
+      ...parts,
+    ]
+  }
+  if (index === 0) {
+    return [
+      {
+        type: 'text',
+        text:
+          `Convert the following PDF content to Markdown. ` +
+          `This is part 1 of ${total}. Subsequent parts continue from where you stop. ` +
+          `Do not add closing remarks — just emit Markdown.`,
+      },
+      ...parts,
+    ]
+  }
+  return [
+    {
+      type: 'text',
+      text:
+        `Continue converting the same PDF document. This is part ${index + 1} of ${total}. ` +
+        `Keep the same Markdown style. Do not repeat previous content. ` +
+        `Do not add headers like "Part ${index + 1}". Just continue.`,
+    },
+    ...parts,
+  ]
+}
+
+/** provider 식별자 → 스트리밍 함수 디스패치 (프록시 경유) */
 function streamForProvider(
   provider: AIProvider,
   apiKey: string,
-  text: string,
+  content: AIContentPart[],
+  signal?: { aborted: boolean },
 ): AsyncGenerator<string, void, unknown> {
   switch (provider) {
     case 'claude':
-      return streamWithClaude(apiKey, text)
+      return streamWithClaude(apiKey, content, signal)
     case 'gemini':
-      return streamWithGemini(apiKey, text)
+      return streamWithGemini(apiKey, content, signal)
     case 'openai':
-      return streamWithOpenAI(apiKey, text)
+      return streamWithOpenAI(apiKey, content, signal)
     default: {
       const _exhaustive: never = provider
       throw new Error(`지원하지 않는 AI 제공자: ${String(_exhaustive)}`)
@@ -152,7 +280,7 @@ function streamForProvider(
 }
 
 /**
- * 제공자 SDK / fetch 에러를 사용자 친화적 메시지로 정규화.
+ * 제공자 / 프록시 / fetch 에러를 사용자 친화적 메시지로 정규화.
  */
 export function normalizeError(error: unknown): ConvertErrorInfo {
   const message =
@@ -180,7 +308,8 @@ export function normalizeError(error: unknown): ConvertErrorInfo {
     lower.includes('context_length') ||
     lower.includes('context length') ||
     lower.includes('maximum context') ||
-    lower.includes('too many tokens')
+    lower.includes('too many tokens') ||
+    lower.includes('too long')
   ) {
     return {
       code: 'CONTEXT_TOO_LONG',

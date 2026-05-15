@@ -38,3 +38,8 @@ _workspace/
 .omc/
 
 .vercel
+.gstack/
+
+# agent tooling artifacts
+.bkit/
+docs/.pdca-status.json

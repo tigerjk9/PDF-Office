@@ -22,14 +22,14 @@ export function FileList() {
   if (documents.length === 0) {
     return (
       <div className="flex h-full items-center justify-center px-6 py-8 text-center text-xs text-muted-foreground">
-        No documents yet. Drop a PDF or click "Add PDF" above.
+        아직 문서가 없습니다. PDF를 끌어다 놓거나 위의 &quot;PDF 추가&quot;를 누르세요.
       </div>
     )
   }
 
   return (
     <ScrollArea className="h-full">
-      <ul className="space-y-1 p-2" role="listbox" aria-label="Loaded documents">
+      <ul className="space-y-1 p-2" role="listbox" aria-label="불러온 문서 목록">
         {documents.map((doc) => {
           const isActive = doc.id === activeDocId
           return (
@@ -71,7 +71,7 @@ export function FileList() {
                     {isActive && (
                       <CheckCircle2
                         className="h-3 w-3 flex-shrink-0 text-primary"
-                        aria-label="active"
+                        aria-label="현재 문서"
                       />
                     )}
                   </div>
@@ -90,7 +90,7 @@ export function FileList() {
                     e.stopPropagation()
                     removeDocument(doc.id)
                   }}
-                  aria-label={`Remove ${doc.name}`}
+                  aria-label={`${doc.name} 제거`}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>

@@ -16,12 +16,24 @@ export interface PdfPageMeta {
 }
 
 /**
+ * 잘못된 비밀번호로 암호 PDF 로드를 시도했을 때 던지는 에러 메시지 접두.
+ * 호출 측(store)이 일반 암호화(ENCRYPTED_PDF)와 구분하는 데 사용한다.
+ */
+export const WRONG_PASSWORD_PREFIX = 'WRONG_PASSWORD'
+
+/**
  * pdfjs PDFDocumentProxy 로드.
  *
  * 주의: pdfjs는 입력 Uint8Array를 내부적으로 detach/transfer 할 수 있으므로
  *      재사용 가능한 원본을 유지하려면 호출 측에서 slice() 후 전달할 것.
+ *
+ * @param bytes PDF 원본 바이트
+ * @param password 암호화 PDF 복호화용 비밀번호(옵셔널, 하위호환 — 미지정 시 기존 동작)
  */
-export async function loadPdfDocument(bytes: Uint8Array): Promise<PDFDocumentProxy> {
+export async function loadPdfDocument(
+  bytes: Uint8Array,
+  password?: string,
+): Promise<PDFDocumentProxy> {
   // 방어적 복사: pdfjs가 버퍼를 detach하더라도 원본은 안전
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
@@ -29,14 +41,25 @@ export async function loadPdfDocument(bytes: Uint8Array): Promise<PDFDocumentPro
   try {
     return await pdfjsLib.getDocument({
       data: copy,
+      // 비밀번호가 주어진 경우에만 전달(미지정 시 기존 호출부와 동일 동작)
+      ...(password !== undefined ? { password } : {}),
       // 메모리 절약: 폰트/이미지 캐시 최소화
       disableAutoFetch: false,
       disableStream: false,
     }).promise
   } catch (cause) {
-    const err = cause as Error & { name?: string }
+    const err = cause as Error & { name?: string; code?: number }
     if (err?.name === 'PasswordException') {
-      throw new Error('ENCRYPTED_PDF: 암호화된 PDF는 지원되지 않습니다.')
+      // pdfjs PasswordException.code: 1=NEED_PASSWORD, 2=INCORRECT_PASSWORD.
+      // 비밀번호를 제공했는데도 PasswordException → 비밀번호 불일치로 간주.
+      // (code 미존재 환경 대비: password 제공 여부로도 보강 판단)
+      const incorrect = err.code === 2 || password !== undefined
+      if (incorrect) {
+        throw new Error(
+          `${WRONG_PASSWORD_PREFIX}: 비밀번호가 올바르지 않습니다.`,
+        )
+      }
+      throw new Error('ENCRYPTED_PDF: 암호화된 PDF입니다. 비밀번호가 필요합니다.')
     }
     if (err?.name === 'InvalidPDFException') {
       throw new Error('INVALID_FILE: 유효하지 않은 PDF 파일입니다.')
@@ -56,9 +79,15 @@ export async function getPageCount(bytes: Uint8Array): Promise<number> {
 /**
  * 모든 페이지의 viewport(폭/높이) 메타데이터 수집.
  * scale=1.0 기준 PDF 좌표계(pt) 단위.
+ *
+ * @param bytes PDF 원본 바이트
+ * @param password 암호화 PDF 복호화용 비밀번호(옵셔널, 하위호환)
  */
-export async function getAllPageMeta(bytes: Uint8Array): Promise<PdfPageMeta[]> {
-  const doc = await loadPdfDocument(bytes)
+export async function getAllPageMeta(
+  bytes: Uint8Array,
+  password?: string,
+): Promise<PdfPageMeta[]> {
+  const doc = await loadPdfDocument(bytes, password)
   const metas: PdfPageMeta[] = []
   try {
     for (let i = 1; i <= doc.numPages; i++) {

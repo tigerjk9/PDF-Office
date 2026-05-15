@@ -61,6 +61,10 @@ export type PdfOperation =
   | MergeDocumentsOperation
   | RotatePageOperation
   | EditTextOperation
+  | ExtractPagesOperation
+  | InsertBlankPageOperation
+  | InsertPagesFromDocOperation
+  | WatermarkOperation
 
 export interface DeletePagesOperation {
   type: 'delete'
@@ -95,6 +99,44 @@ export interface EditTextOperation {
   replacementText: string
 }
 
+/** 선택 페이지를 새 문서로 추출/분할 (P2-5). 새 PdfDocument 생성. */
+export interface ExtractPagesOperation {
+  type: 'extract'
+  docId: DocId
+  pageIndices: PageIndex[]
+  outputName?: string
+}
+
+/** 빈 페이지 삽입 (P2-5). atIndex 위치에 삽입(해당 위치 앞). */
+export interface InsertBlankPageOperation {
+  type: 'insertBlank'
+  docId: DocId
+  atIndex: PageIndex
+  /** 미지정 시 atIndex 인접 페이지 크기 또는 A4 기본 */
+  size?: { width: number; height: number }
+}
+
+/** 다른 문서의 페이지를 현재 문서에 삽입 (P2-5). */
+export interface InsertPagesFromDocOperation {
+  type: 'insertFrom'
+  docId: DocId
+  sourceDocId: DocId
+  sourcePageIndices: PageIndex[]
+  atIndex: PageIndex
+}
+
+/** 모든 페이지에 텍스트 워터마크 적용 (P2-8). 문서 ID 유지. */
+export interface WatermarkOperation {
+  type: 'watermark'
+  docId: DocId
+  text: string
+  /** 0~1, 기본 0.15 */
+  opacity?: number
+  fontSize?: number
+  /** 대각선 등 회전 각도(도). 기본 45 */
+  rotationDeg?: number
+}
+
 /** 엔진 실행 결과 */
 export interface ApplyOperationResult {
   success: boolean
@@ -126,10 +168,16 @@ export interface PdfStore {
   loadingMessage: string | null
   error: PdfError | null
   conversionResults: Record<DocId, ConversionResult>
+  /** Undo 스택에 되돌릴 작업이 있는지 (P1-8) */
+  canUndo: boolean
+  /** Redo 스택에 다시 적용할 작업이 있는지 (P1-8) */
+  canRedo: boolean
 
   // --- 액션: 문서 ---
   loadDocument: (file: File) => Promise<void>
   loadDocuments: (files: File[]) => Promise<void>
+  /** 암호화 PDF를 비밀번호로 재시도 로드 (P2-8). */
+  loadEncryptedDocument: (file: File, password: string) => Promise<void>
   removeDocument: (docId: DocId) => void
   setActiveDoc: (docId: DocId | null) => void
 
@@ -149,6 +197,12 @@ export interface PdfStore {
   // --- 액션: AI ---
   convertToMarkdown: (docId: DocId, options: ConversionOptions) => Promise<ConversionResult>
 
+  // --- 액션: 히스토리 (P1-8) ---
+  /** 직전 편집 작업(삭제/회전/순서변경/병합)을 되돌린다. */
+  undo: () => void
+  /** 되돌린 작업을 다시 적용한다. */
+  redo: () => void
+
   // --- 액션: 공통 ---
   clearError: () => void
   reset: () => void
@@ -160,7 +214,12 @@ export interface PdfStore {
 
 export interface ConversionOptions {
   provider: AIProvider
+  /** 변환 범위 (P2-2). 'range'면 pageRange, 'selected'면 pages 사용. 미지정=all */
+  scope?: 'all' | 'current' | 'selected' | 'range'
+  /** scope='range'일 때 사용 (start..end, 0-based 포함 범위) */
   pageRange?: { start: PageIndex; end: PageIndex }
+  /** scope='selected'/'current'일 때 변환할 페이지 인덱스 목록 (P2-2) */
+  pages?: PageIndex[]
   quality?: 'fast' | 'balanced' | 'high'
   customPrompt?: string
   apiKey?: string

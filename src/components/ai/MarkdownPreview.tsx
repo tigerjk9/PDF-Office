@@ -40,7 +40,7 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
       {/* 액션 바 */}
       <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-2">
         <span className="text-xs text-muted-foreground">
-          {markdown.length.toLocaleString()} chars
+          {markdown.length.toLocaleString()}자
         </span>
         <div className="flex gap-1.5">
           <Button
@@ -48,17 +48,17 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
             size="sm"
             className="h-7 gap-1.5 text-xs"
             onClick={handleCopy}
-            aria-label="Copy markdown to clipboard"
+            aria-label="Markdown 클립보드에 복사"
           >
             {copied ? (
               <>
                 <Check className="h-3.5 w-3.5 text-green-600" />
-                <span className="text-green-600">Copied</span>
+                <span className="text-green-600">복사됨</span>
               </>
             ) : (
               <>
                 <Copy className="h-3.5 w-3.5" />
-                <span>Copy</span>
+                <span>복사</span>
               </>
             )}
           </Button>
@@ -67,10 +67,10 @@ export function MarkdownPreview({ markdown, fileName = 'document.md' }: Markdown
             size="sm"
             className="h-7 gap-1.5 text-xs"
             onClick={handleDownload}
-            aria-label="Download markdown file"
+            aria-label="Markdown 파일 다운로드"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Download .md</span>
+            <span>.md 다운로드</span>
           </Button>
         </div>
       </div>

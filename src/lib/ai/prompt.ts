@@ -1,9 +1,18 @@
 /**
- * AI 시스템 프롬프트 + 텍스트 청크 분할 유틸리티
+ * AI 시스템 프롬프트 + 텍스트/페이지 청크 분할 유틸리티
  *
  * 모든 제공자(Claude/Gemini/OpenAI)가 동일한 시스템 프롬프트와 동일한
  * 청크 분할 정책을 공유하도록 단일 진실 소스 역할을 한다.
+ *
+ * - splitIntoChunks: 텍스트 전용(레거시 텍스트 경로) 청크 분할
+ * - buildPageChunks: 페이지별 {text, imageBase64?} → 멀티모달 content 파트
+ *   청크 (P0-2 비전 폴백). 텍스트 페이지는 텍스트 파트, 스캔 페이지는
+ *   이미지 파트로 묶는다.
  */
+
+import type { AIContentPart } from './messages'
+import { imagePart, textPart } from './messages'
+import type { ExtractedPage } from './page-extractor'
 
 /**
  * PDF → Markdown 변환에 사용되는 시스템 프롬프트.
@@ -177,4 +186,114 @@ export function buildUserMessage(
     `Keep the same Markdown style. Do not repeat the previous content. ` +
     `Do not add headers like "Part ${index + 1}". Just continue.\n\n${chunk}`
   )
+}
+
+// ---------------------------------------------------------------------------
+// 페이지 기반 멀티모달 청크 (P0-2 비전 폴백)
+// ---------------------------------------------------------------------------
+
+/** 한 청크에 담을 수 있는 비전 이미지 최대 개수 (요청 크기/토큰 가드) */
+export const MAX_IMAGES_PER_CHUNK = 5
+
+/** 한 청크에 담을 수 있는 텍스트 최대 문자 수 (이미지 동반 시) */
+const MAX_TEXT_PER_PAGE_CHUNK = MAX_CHARS_PER_CHUNK
+
+/**
+ * 단일 변환 청크. content는 멀티모달 파트 배열.
+ * - 텍스트 페이지: text 파트
+ * - 스캔/이미지 페이지: 안내 텍스트 + image 파트
+ */
+export interface PageChunk {
+  content: AIContentPart[]
+  /** 이 청크에 비전 이미지가 포함되는지 (디버그/판단용) */
+  hasImages: boolean
+}
+
+/**
+ * 추출된 페이지 배열을 모델 호출용 청크로 묶는다.
+ *
+ * 정책:
+ *   - 텍스트가 있는 페이지: 텍스트 누적. PAGE_SEPARATOR로 페이지 경계 표시.
+ *   - 텍스트가 부족하고 imageBase64가 있는 페이지: 이미지 파트로 추가.
+ *   - 청크 경계: 텍스트가 maxChars를 넘거나, 이미지 수가
+ *     MAX_IMAGES_PER_CHUNK를 넘으면 새 청크 시작.
+ *   - 전 페이지가 텍스트 0이고 이미지도 없으면 빈 배열 반환(호출 측이
+ *     "비텍스트 + 비전 불가" 한국어 에러 처리).
+ *
+ * @param pages extractPagesForAI 결과
+ * @param maxChars 청크당 최대 텍스트 문자 수 (재시도 시 축소 가능)
+ */
+export function buildPageChunks(
+  pages: ExtractedPage[],
+  maxChars: number = MAX_TEXT_PER_PAGE_CHUNK,
+): PageChunk[] {
+  const chunks: PageChunk[] = []
+
+  let textBuf = ''
+  let parts: AIContentPart[] = []
+  let imageCount = 0
+  let hasAnyText = false
+
+  const flush = () => {
+    const finalized: AIContentPart[] = []
+    const trimmed = textBuf.trim()
+    if (trimmed) finalized.push(textPart(trimmed))
+    // 누적된 이미지 파트(+안내 텍스트) 이어붙임
+    for (const p of parts) finalized.push(p)
+    if (finalized.length > 0) {
+      chunks.push({
+        content: finalized,
+        hasImages: finalized.some((p) => p.type === 'image'),
+      })
+    }
+    textBuf = ''
+    parts = []
+    imageCount = 0
+  }
+
+  for (const page of pages) {
+    const pageText = page.text?.trim() ?? ''
+    const useVision =
+      pageText.length < 1 && typeof page.imageBase64 === 'string'
+
+    if (useVision && page.imageBase64) {
+      // 이미지 청크 한도 초과 시 분리
+      if (imageCount >= MAX_IMAGES_PER_CHUNK) flush()
+      parts.push(
+        textPart(
+          `[Page ${page.index + 1}] This page has no text layer (scanned/image). ` +
+            `Transcribe its content to Markdown from the image:`,
+        ),
+      )
+      parts.push(imagePart(page.imageBase64))
+      imageCount++
+      continue
+    }
+
+    if (pageText) {
+      hasAnyText = true
+      const candidate = textBuf
+        ? textBuf + PAGE_SEPARATOR + pageText
+        : pageText
+      if (candidate.length > maxChars && textBuf) {
+        flush()
+        textBuf = pageText
+      } else if (candidate.length > maxChars) {
+        // 단일 페이지가 한도 초과: 강제 텍스트 분할 후 개별 청크.
+        for (const sub of splitIntoChunks(pageText, maxChars)) {
+          chunks.push({ content: [textPart(sub)], hasImages: false })
+        }
+        textBuf = ''
+      } else {
+        textBuf = candidate
+      }
+    }
+    // pageText 비었고 imageBase64도 없으면 스킵 (정보 없음)
+  }
+
+  flush()
+
+  // 텍스트도 이미지도 전혀 없으면 빈 청크 → 호출 측이 에러 처리
+  if (chunks.length === 0 && !hasAnyText) return []
+  return chunks
 }
