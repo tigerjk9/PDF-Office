@@ -1,9 +1,9 @@
 /**
  * 앱 푸터 (R3-3) — tigerjk9/Live-Artifact `site-footer` 형식 재현.
  *
- * 원본 구조(profile-card + footer-meta)와 스타일을 그대로 따르되, 색/토큰은
- * PDF Office 디자인 시스템(globals.css)에 맞게 적응한다. profile-card 의
- * 딥네이비 배경은 원본 정체성이므로 유지(self-host 이미지: public/facilitator.png).
+ * profile-card 만 노출(footer-meta 갱신·GitHub 행은 제거). 색/토큰은 PDF
+ * Office 디자인 시스템(globals.css)에 맞게 적응하되 profile-card 의 딥네이비
+ * 배경은 원본 정체성이므로 유지(self-host 이미지: public/facilitator.png).
  *
  * 서버 컴포넌트(상호작용 없음) — 정적 마크업.
  */
@@ -40,21 +40,6 @@ export function AppFooter() {
           litt.ly/dot_connector ↗
         </span>
       </a>
-
-      <div className="flex flex-wrap items-center justify-center gap-[18px] text-xs">
-        <span className="tabular-nums">
-          갱신{' '}
-          <time dateTime="2026-05-15">2026년 5월 15일 KST</time>
-        </span>
-        <a
-          className="font-semibold text-foreground transition-colors duration-fast ease-out-quart hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-          href="https://github.com/tigerjk9"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          GitHub ↗
-        </a>
-      </div>
     </footer>
   )
 }

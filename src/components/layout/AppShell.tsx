@@ -482,7 +482,7 @@ function EmptyState() {
           <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-primary">
             브라우저에서 완결되는 PDF 작업
           </p>
-          <h2 className="max-w-[18ch] text-2xl font-semibold leading-tight tracking-[-0.022em] text-foreground">
+          <h2 className="max-w-[18ch] break-keep text-2xl font-semibold leading-tight tracking-[-0.022em] text-foreground">
             PDF를 열고, 다듬고, 변환하세요.
           </h2>
           <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">

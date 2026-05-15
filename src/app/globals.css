@@ -97,8 +97,9 @@
   body {
     background-color: var(--canvas);
     color: var(--foreground);
-    font-family: var(--font-pretendard), 'Apple SD Gothic Neo',
-      'Malgun Gothic', system-ui, sans-serif;
+    /* next/font 의 --font-pretendard 가 이미 Apple SD Gothic Neo·Malgun
+       Gothic·system-ui·sans-serif 폴백 체인을 포함 → 재나열·중복 제거. */
+    font-family: var(--font-pretendard);
     font-feature-settings: 'ss01', 'cv01';
     font-kerning: normal;
     text-rendering: optimizeLegibility;

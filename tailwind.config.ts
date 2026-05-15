@@ -73,13 +73,9 @@ const config: Config = {
         success: { DEFAULT: 'var(--success)' },
       },
       fontFamily: {
-        sans: [
-          'var(--font-pretendard)',
-          'Apple SD Gothic Neo',
-          'Malgun Gothic',
-          'system-ui',
-          'sans-serif',
-        ],
+        // --font-pretendard(next/font)가 이미 Apple SD Gothic Neo·Malgun
+        // Gothic·system-ui·sans-serif 폴백 체인을 포함 → 중복 재나열 제거.
+        sans: ['var(--font-pretendard)'],
       },
       fontSize: {
         // 모듈러 스케일(major third 1.25) — 적은 스텝, 강한 대비

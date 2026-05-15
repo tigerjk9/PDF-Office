@@ -145,6 +145,12 @@ async function buildDocument(
 const historyRef: { current: HistoryState } = { current: emptyHistory() }
 
 /**
+ * 업로드 직렬 큐. 진행 중 로드가 있을 때 들어온 추가 업로드를 무음 드롭하지
+ * 않고 현재 로드 이후로 이어 처리한다(빠른 연속 업로드 견고성).
+ */
+let uploadChain: Promise<void> = Promise.resolve()
+
+/**
  * 히스토리 변경 시 스토어의 canUndo/canRedo 불리언을 동기화한다.
  * setState 는 스토어 생성 후에만 가능하므로 지연 바인딩한다.
  */
@@ -309,11 +315,17 @@ export const usePdfStore = create<PdfStore>()(
           },
 
           loadDocuments: async (files: File[]) => {
-            for (const f of files) {
-              // 순차 로드 (메모리 가드)
-              // eslint-disable-next-line no-await-in-loop
-              await get().loadDocument(f)
-            }
+            // 진행 중 로드가 있어도 드롭하지 않고 직렬 큐에 이어 붙인다.
+            // (.catch 로 한 호출의 실패가 이후 큐를 오염시키지 않게 격리)
+            uploadChain = uploadChain
+              .then(async () => {
+                for (const f of files) {
+                  // eslint-disable-next-line no-await-in-loop
+                  await get().loadDocument(f)
+                }
+              })
+              .catch(() => {})
+            return uploadChain
           },
 
           loadEncryptedDocument: async (file: File, password: string) => {
