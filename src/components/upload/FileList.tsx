@@ -32,7 +32,7 @@ export function FileList() {
   }
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="h-full [&_[data-radix-scroll-area-viewport]>div]:!block">
       <ul className="p-1.5" role="listbox" aria-label="불러온 문서 목록">
         {documents.map((doc) => {
           const isActive = doc.id === activeDocId
@@ -72,7 +72,7 @@ export function FileList() {
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
+                  <div className="flex min-w-0 items-center gap-1">
                     <span
                       className={cn(
                         'truncate text-xs',
@@ -99,14 +99,15 @@ export function FileList() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 flex-shrink-0 text-muted-foreground/70 transition-colors duration-fast hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-7 w-7 flex-shrink-0 rounded-md border border-border bg-background text-muted-foreground transition-colors duration-fast hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={(e) => {
                     e.stopPropagation()
                     removeDocument(doc.id)
                   }}
-                  aria-label={`${doc.name} 제거`}
+                  aria-label={`${doc.name} 삭제`}
+                  title="이 PDF 삭제"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </li>
