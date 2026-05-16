@@ -24,10 +24,29 @@ const pretendard = localFont({
   ],
 })
 
+const SITE_URL = 'https://pdf-office-dusky.vercel.app'
+const OG_TITLE = 'PDF Office — 브라우저에서 완결되는 PDF 작업'
+const OG_DESC =
+  'PDF를 브라우저에서 바로 편집·병합·회전하고 AI로 Markdown으로 변환하세요. 파일은 서버로 전송되지 않습니다.'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'PDF Office — 브라우저 기반 PDF 편집기',
-  description:
-    'PDF를 브라우저에서 바로 편집·병합·회전하고 AI로 Markdown으로 변환하세요. 파일은 서버로 전송되지 않습니다.',
+  description: OG_DESC,
+  // og:image / twitter:image 는 opengraph-image.tsx · twitter-image.tsx 가 자동 주입
+  openGraph: {
+    type: 'website',
+    siteName: 'PDF Office',
+    locale: 'ko_KR',
+    url: '/',
+    title: OG_TITLE,
+    description: OG_DESC,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: OG_TITLE,
+    description: OG_DESC,
+  },
 }
 
 export default function RootLayout({
