@@ -60,7 +60,6 @@ export type PdfOperation =
   | ReorderPagesOperation
   | MergeDocumentsOperation
   | RotatePageOperation
-  | EditTextOperation
   | ExtractPagesOperation
   | InsertBlankPageOperation
   | InsertPagesFromDocOperation
@@ -89,18 +88,6 @@ export interface RotatePageOperation {
   docId: DocId
   pageIndex: PageIndex
   degrees: 90 | 180 | 270
-}
-
-export interface EditTextOperation {
-  type: 'editText'
-  docId: DocId
-  pageIndex: PageIndex
-  targetText: string
-  replacementText: string
-  /** 교체 대상 텍스트의 PDF 좌표 영역(pt, 좌하단 원점) — R3 텍스트 편집 */
-  rect: { x: number; y: number; width: number; height: number }
-  /** 폰트 크기(pt) 추정값. 미지정 시 rect.height 기반 추정 */
-  fontSize?: number
 }
 
 /** 선택 페이지를 새 문서로 추출/분할 (P2-5). 새 PdfDocument 생성. */
@@ -249,12 +236,6 @@ export interface PdfEngine {
   reorder(doc: PdfDocument, newOrder: PageIndex[]): Promise<PdfDocument>
   merge(docs: PdfDocument[], outputName: string): Promise<PdfDocument>
   rotate(doc: PdfDocument, pageIndex: PageIndex, degrees: RotationDegrees): Promise<PdfDocument>
-  editText(
-    doc: PdfDocument,
-    pageIndex: PageIndex,
-    targetText: string,
-    replacementText: string,
-  ): Promise<{ document: PdfDocument; replaced: boolean }>
   serialize(doc: PdfDocument): Promise<Uint8Array>
 }
 

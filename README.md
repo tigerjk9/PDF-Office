@@ -24,7 +24,6 @@
 | **업로드** | 끌어다 놓기 또는 클릭 — 한 번에 여러 PDF |
 | **보기** | 페이지별 뷰어, 줌·맞춤(너비/페이지), 안정적 로딩 |
 | **페이지 편집** | 삭제·회전·**드래그로 순서 변경**, 선택(범위/토글), 실행취소/다시실행 |
-| **텍스트 편집** | 페이지 내 텍스트 클릭 → 인라인 수정 (한글 포함, 임베드 폰트) |
 | **추출 · 삽입 · 워터마크** | 선택 페이지 추출/분할, 빈 페이지·타 문서 페이지 삽입, 워터마크 |
 | **검색** | 문서 텍스트 검색 후 해당 페이지로 이동 |
 | **병합** | 2개 이상 PDF를 원하는 순서로 결합 — **서로 다른 페이지 크기 자동 정규화** |
@@ -70,7 +69,7 @@ API 키는 **브라우저 `localStorage`에만** 저장되고, 동일 출처 `/a
 Next.js 16 (App Router + Turbopack)
 TypeScript · Tailwind CSS v3.4 · shadcn/ui · Pretendard
 pdfjs-dist          — PDF 렌더링 / 텍스트 추출
-pdf-lib + @pdf-lib/fontkit — PDF 조작 / 텍스트 편집(CJK 폰트 임베드)
+pdf-lib              — PDF 조작 (삭제·회전·재정렬·병합·추출·삽입·워터마크)
 Zustand (+ IndexedDB persist) — 상태·세션 보존
 react-dropzone      — 파일 업로드
 Claude / Gemini / OpenAI — AI 변환 (서버 프록시, BYO Key)
@@ -90,7 +89,7 @@ src/
 │   ├── merge/            # MergeDialog
 │   ├── pages/            # PageGrid, PageThumbnail, Insert/Watermark 다이얼로그
 │   ├── upload/           # DropZone, FileList, PasswordDialog
-│   ├── viewer/           # PdfViewer, ZoomControl, SearchPanel, TextEditLayer
+│   ├── viewer/           # PdfViewer, ZoomControl, SearchPanel
 │   └── ui/               # shadcn/ui 프리미티브
 ├── hooks/
 ├── lib/
@@ -112,7 +111,6 @@ Vercel용으로 사전 구성되어 있습니다 (`vercel.json`이 `--legacy-pee
 
 ## 알려진 제약
 
-- **텍스트 편집**은 완벽한 WYSIWYG가 아닙니다. 원본 글꼴/스타일을 보존하지 않고(임베드 폰트로 통일), 단일 라인 가정이며, 흰색 redact를 사용해 비흰색 배경 페이지에는 박스 잔흔이, 교체 텍스트가 더 짧으면 원본 꼬리가 보일 수 있습니다.
 - **OCR 없음** — 텍스트 레이어가 없는 스캔 PDF는 AI 변환 시 페이지 이미지를 비전 모델로 전달합니다(텍스트 추출 자체는 불가).
 - **대용량 PDF**(100+ 페이지)는 썸네일 생성이 느릴 수 있습니다.
 

@@ -183,6 +183,32 @@ export function AppShell() {
               </Button>
             )}
 
+            {documents.length > 0 && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setResetOpen(true)}
+                      aria-label="모든 문서 초기화"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="hidden sm:inline">초기화</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    업로드한 모든 PDF·편집 내역 삭제 후 처음 화면으로
+                  </TooltipContent>
+                </Tooltip>
+                <span
+                  className="hidden h-4 w-px bg-border sm:block"
+                  aria-hidden
+                />
+              </>
+            )}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -291,29 +317,8 @@ export function AppShell() {
             className="hidden w-[17rem] flex-shrink-0 flex-col border-r border-border bg-background md:flex"
             aria-label="문서 사이드바"
           >
-            <div className="flex h-9 flex-shrink-0 items-center justify-between gap-2 px-3">
-              <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                문서
-              </span>
-              {documents.length > 0 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 gap-1 px-1.5 text-2xs text-muted-foreground hover:text-destructive"
-                      onClick={() => setResetOpen(true)}
-                      aria-label="모든 문서 초기화"
-                    >
-                      <RotateCcw className="h-3 w-3" aria-hidden />
-                      초기화
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    업로드한 모든 PDF·편집 내역 삭제
-                  </TooltipContent>
-                </Tooltip>
-              )}
+            <div className="flex h-9 flex-shrink-0 items-center px-3 text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              문서
             </div>
             <Separator />
             <div className="p-2.5">
@@ -375,18 +380,6 @@ export function AppShell() {
                 aria-hidden
               />
               <SheetTitle>문서</SheetTitle>
-              {documents.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-7 gap-1 px-2 text-2xs text-muted-foreground hover:text-destructive"
-                  onClick={() => setResetOpen(true)}
-                  aria-label="모든 문서 초기화"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                  초기화
-                </Button>
-              )}
             </SheetHeader>
             <div className="p-2.5">
               <DropZone variant="compact" />

@@ -7,10 +7,8 @@
  * 주의: pdfjs(1-based)와 pdf-lib(0-based) 인덱스 변환은 항상 호출 경계에서 처리.
  */
 
-import { PDFDocument, degrees, StandardFonts, rgb } from 'pdf-lib'
-import type { PDFFont } from 'pdf-lib'
+import { PDFDocument, degrees } from 'pdf-lib'
 import { mergeNormalized } from './merge-normalize'
-import { embedKoreanFont } from './font-embed'
 
 /**
  * 지정한 페이지 인덱스들을 삭제.
@@ -126,117 +124,6 @@ export async function rotatePage(
   const total = ((current + deg) % 360) as 0 | 90 | 180 | 270
   page.setRotation(degrees(total))
   return doc.save()
-}
-
-/** replacement 에 WinAnsi(표준 14 폰트) 범위를 벗어나는 문자가 있는가. */
-function hasNonWinAnsi(text: string): boolean {
-  // Helvetica(WinAnsi)는 대략 U+00FF 이하만 안전. 그 외(한글/CJK/이모지 등)
-  // 가 하나라도 있으면 임베드 폰트가 필요하다.
-  for (const ch of text) {
-    if (ch.codePointAt(0)! > 0xff) return true
-  }
-  return false
-}
-
-/**
- * 페이지 내 텍스트 교체 (R3 텍스트 편집).
- *
- * pdf-lib은 기존 텍스트를 직접 수정할 수 없으므로,
- * 1) target 영역을 흰 사각형으로 덮고(redact),
- * 2) replacement 를 동일 위치에 새로 그린다.
- *
- * 폰트 선택:
- *  - 한글/CJK/유니코드 문자가 포함되면 `@pdf-lib/fontkit` 으로 Pretendard
- *    TTF 를 서브셋 임베드해 그린다(tofu 방지).
- *  - 폰트 로드/임베드 실패 시 StandardFonts.Helvetica 로 폴백한다.
- *    이 경우 영문/숫자는 정상 표시되지만 비-WinAnsi 문자는 깨질 수 있어
- *    `warning` 을 함께 반환한다(영문만 있으면 폴백이어도 무해).
- *
- * 한계:
- *  - 텍스트 위치는 pdfjs로 추출한 좌표(rect)에 의존 (호출 측 책임).
- *  - 원본 폰트/스타일은 보존되지 않음(Pretendard 또는 Helvetica로 통일).
- *  - 단일 라인 가정. redact 는 흰색 — 배경이 흰색이 아니면 잔흔 가능.
- *
- * @param bytes PDF 바이트
- * @param pageIndex 0-based
- * @param target 교체 대상 텍스트 좌표 정보
- * @param replacement 새 텍스트
- * @returns 교체 후 PDF 바이트 + 교체 성공 여부 + (폴백 시) 경고
- */
-export async function replaceTextAtRect(
-  bytes: Uint8Array,
-  pageIndex: number,
-  target: {
-    /** 텍스트 영역 X 좌표 (PDF pt) */
-    x: number
-    /** 텍스트 영역 Y 좌표 (PDF pt, 하단 원점) */
-    y: number
-    /** 영역 너비 */
-    width: number
-    /** 영역 높이 */
-    height: number
-    /** 폰트 크기 (대략 height 기준) */
-    fontSize?: number
-  },
-  replacement: string,
-): Promise<{ bytes: Uint8Array; replaced: boolean; warning?: string }> {
-  const doc = await PDFDocument.load(bytes, { ignoreEncryption: false })
-  if (pageIndex < 0 || pageIndex >= doc.getPageCount()) {
-    throw new Error(`OPERATION_FAILED: 페이지 인덱스 ${pageIndex} 범위 초과.`)
-  }
-  const page = doc.getPage(pageIndex)
-
-  // 폰트 선택: 한글 폰트 임베드 시도 → 실패 시 Helvetica 폴백.
-  let font: PDFFont | null = await embedKoreanFont(doc)
-  let warning: string | undefined
-  if (!font) {
-    font = await doc.embedFont(StandardFonts.Helvetica)
-    // 임베드 실패 + 비-WinAnsi 문자 → 깨질 수 있음을 알린다.
-    if (hasNonWinAnsi(replacement)) {
-      warning =
-        '한글 폰트를 불러오지 못해 일부 문자가 깨질 수 있습니다(영문/숫자는 정상).'
-    }
-  }
-
-  // 폰트 크기 추정 (호출 측 추정값 우선).
-  const fontSize =
-    target.fontSize ?? Math.max(8, Math.min(target.height * 0.85, 24))
-
-  // redact 박스를 "한 줄" 이내로 단단히 제한한다 (버그1).
-  //
-  // 상류(TextEditLayer)의 좌표 추정이 과대평가되어도 흰 사각형이 인접/다중
-  // 라인을 침범해 문서를 훼손하지 않도록, 높이는 fontSize 기반 한 줄
-  // (≤ fontSize*1.5), 너비는 입력 폭을 넘지 않게 클램프하고, 텍스트 밴드
-  // 중앙에 정렬한다. (완벽 WYSIWYG 아님 — 한계는 README 명시)
-  const lineH = Math.min(
-    Math.max(target.height, fontSize * 1.05),
-    fontSize * 1.5,
-  )
-  const safeW = Math.max(Math.min(target.width, 2000), fontSize * 0.5)
-  const rectY = target.y + (target.height - lineH) / 2
-
-  // 1) 기존 텍스트 영역을 흰 사각형으로 덮기 (한 줄로 제한)
-  page.drawRectangle({
-    x: target.x,
-    y: rectY,
-    width: safeW,
-    height: lineH,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(1, 1, 1),
-    borderWidth: 0,
-  })
-
-  // 2) 새 텍스트 그리기 — 한 줄 박스 기준 세로 중앙
-  page.drawText(replacement, {
-    x: target.x,
-    y: rectY + (lineH - fontSize) / 2,
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-    maxWidth: safeW,
-  })
-
-  return { bytes: await doc.save(), replaced: true, warning }
 }
 
 /**

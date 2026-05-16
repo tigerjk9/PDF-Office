@@ -24,7 +24,6 @@
 | **Upload** | Drag & drop or click — multiple PDFs at once |
 | **View** | Page-by-page viewer, zoom & fit (width/page), stable loading |
 | **Edit pages** | Delete, rotate, **drag to reorder**, range/toggle select, undo/redo |
-| **Edit text** | Click text in a page → edit inline (Korean supported, embedded font) |
 | **Extract · Insert · Watermark** | Extract/split selected pages, insert blank or other-doc pages, watermark |
 | **Search** | Full-text search, jump to the matching page |
 | **Merge** | Combine 2+ PDFs in any order — **mixed page sizes auto-normalized** |
@@ -70,7 +69,7 @@ Scanned PDFs without a text layer are sent as page images to a vision model. Con
 Next.js 16 (App Router + Turbopack)
 TypeScript · Tailwind CSS v3.4 · shadcn/ui · Pretendard
 pdfjs-dist          — PDF rendering / text extraction
-pdf-lib + @pdf-lib/fontkit — PDF manipulation / text editing (CJK font embed)
+pdf-lib              — PDF manipulation (delete·rotate·reorder·merge·extract·insert·watermark)
 Zustand (+ IndexedDB persist) — state & session restore
 react-dropzone      — file upload
 Claude / Gemini / OpenAI — AI conversion (server proxy, BYO Key)
@@ -88,7 +87,6 @@ Pre-configured for Vercel (`vercel.json` applies `--legacy-peer-deps`). Pushing 
 
 ## Known constraints
 
-- **Text editing** is not perfect WYSIWYG: it does not preserve the original font/style (replacement is drawn in an embedded font), assumes a single line, and uses a white redact box — so non-white backgrounds may show box artifacts and a shorter replacement may leave the original tail visible.
 - **No OCR** — for scanned PDFs without a text layer, AI conversion falls back to sending page images to a vision model.
 - **Large PDFs** (100+ pages) can be slow to thumbnail.
 
