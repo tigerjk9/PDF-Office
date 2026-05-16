@@ -12,6 +12,7 @@ import {
   Search,
   HelpCircle,
   RotateCcw,
+  ShieldCheck,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -517,18 +518,36 @@ function EmptyState() {
     <div className="flex flex-1 flex-col overflow-y-auto">
       <div className="reveal-group mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-6 py-10 sm:px-10">
         <header
-          className="reveal flex flex-col gap-2"
+          className="reveal relative flex flex-col gap-5 pl-5"
           style={{ ['--i' as string]: 0 }}
         >
-          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-primary">
+          {/* 좌측 액센트 레일 — FileList 활성 표시와 동일 모티프(브랜드 일관성) */}
+          <span
+            className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary"
+            aria-hidden
+          />
+          <p className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <span
+              className="inline-block h-1 w-1 flex-shrink-0 rounded-full bg-primary"
+              aria-hidden
+            />
             브라우저에서 완결되는 PDF 작업
           </p>
-          <h2 className="max-w-[18ch] break-keep text-2xl font-semibold leading-tight tracking-[-0.022em] text-foreground">
-            PDF를 열고, 다듬고, 변환하세요.
+          <h2 className="max-w-[20ch] break-keep text-[clamp(2rem,4.6vw,3.25rem)] font-bold leading-[1.08] tracking-[-0.03em] text-foreground">
+            PDF를 열고, 다듬고,{' '}
+            <span className="text-primary">변환</span>하세요.
           </h2>
-          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
-            모든 처리는 사용자의 브라우저 안에서 이루어집니다. 파일은 서버로
-            전송되지 않습니다.
+          <p className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-background py-1.5 pl-2.5 pr-3.5 text-xs leading-none text-muted-foreground">
+            <ShieldCheck
+              className="h-3.5 w-3.5 flex-shrink-0 text-primary"
+              aria-hidden
+            />
+            <span>
+              모든 처리는 브라우저 안에서만 —{' '}
+              <span className="font-semibold text-foreground">
+                파일은 서버로 전송되지 않습니다
+              </span>
+            </span>
           </p>
         </header>
 
