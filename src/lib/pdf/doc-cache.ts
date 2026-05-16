@@ -41,6 +41,12 @@ async function destroyEntry(entry: Entry): Promise<void> {
 /**
  * bytes 에 대한 PDFDocumentProxy 를 획득(없으면 1회 로드). 참조 +1.
  * 다른 bytes 였다면 이전 활성 항목을 즉시 destroy(상한 1개).
+ *
+ * 계약(중요): 동시에 논리적 소유자는 1개만 가정한다. 새 bytes 를 acquire 하면
+ * 이전 활성 항목을 refs 와 무관하게 destroy 하므로, 소유자는 bytes 전환 시
+ * 자신의 doc 참조를 먼저 버리고(setDoc(null) 등) 진행 중 렌더를 cancel 한 뒤
+ * 다음 bytes 를 acquire 해야 한다. (ContinuousViewer 의 effect cleanup →
+ * release+doc=null+slot cancel → 새 effect 에서 acquire 순서가 이를 보장.)
  */
 export function acquirePdfDoc(bytes: Uint8Array): Promise<PDFDocumentProxy> {
   let entry = cache.get(bytes)
