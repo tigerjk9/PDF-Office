@@ -43,3 +43,4 @@ _workspace/
 # agent tooling artifacts
 .bkit/
 docs/.pdca-status.json
+docs/.pdca-snapshots/

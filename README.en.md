@@ -17,19 +17,29 @@
 
 ---
 
+## Why PDF Office
+
+- **Privacy-first** — everything runs in your browser. No file uploads, no server storage, no account, no tracking.
+- **No install** — one link, instant. All you need is a browser.
+- **Work persists** — uploads and edits are saved in the browser (IndexedDB) and survive reloads and revisits.
+
+---
+
 ## What it does
 
 | Feature | Details |
 |---|---|
 | **Upload** | Drag & drop or click — multiple PDFs at once |
+| **Encrypted PDF** | Unlock password-protected PDFs, then edit |
 | **View** | Page-by-page viewer, zoom & fit (width/page), stable loading |
 | **Edit pages** | Delete, rotate, **drag to reorder**, range/toggle select, undo/redo |
 | **Extract · Insert · Watermark** | Extract/split selected pages, insert blank or other-doc pages, watermark |
 | **Search** | Full-text search, jump to the matching page |
 | **Merge** | Combine 2+ PDFs in any order — **mixed page sizes auto-normalized** |
+| **Reset** | Clear all documents and edits in one click |
 | **AI → Markdown** | Convert PDF to structured Markdown (Claude Sonnet 4.6 / Gemini 2.5 Flash / GPT-4o) |
 
-Everything runs **in your browser**. Files never leave your machine. Only AI conversion sends requests — via a same-origin proxy, using your own key — to the chosen provider. Uploaded documents and edits persist in the browser (IndexedDB) and survive a reload.
+The only exception is **AI conversion** — it sends requests via a same-origin proxy, using your own key, to the chosen provider only, and is never stored or logged server-side.
 
 ---
 

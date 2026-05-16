@@ -562,16 +562,16 @@ function EmptyState() {
           {steps.map((s, i) => (
             <li
               key={s.n}
-              className="reveal flex flex-col gap-1.5 bg-background p-4"
+              className="reveal flex flex-col gap-2 bg-background p-5"
               style={{ ['--i' as string]: 2 + i }}
             >
               <span className="text-2xs font-semibold tabular-nums tracking-[0.1em] text-primary">
                 {s.n}
               </span>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-lg font-semibold tracking-[-0.01em] text-foreground">
                 {s.t}
               </span>
-              <span className="text-xs leading-relaxed text-muted-foreground">
+              <span className="text-sm leading-relaxed text-muted-foreground">
                 {s.d}
               </span>
             </li>

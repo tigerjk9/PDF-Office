@@ -31,7 +31,7 @@ export function AppFooter() {
           loading="lazy"
         />
         <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-medium text-foreground transition-colors duration-fast group-hover:text-primary">
             닷커넥터{' '}
             <span className="font-normal text-muted-foreground">
               (김진관)
@@ -40,10 +40,6 @@ export function AppFooter() {
           <span className="text-xs leading-relaxed text-muted-foreground">
             배움, 나눔, 성장을 추구하는 연결주의자
           </span>
-        </span>
-        <span className="ml-auto hidden flex-shrink-0 items-center gap-1 text-xs font-medium tabular-nums tracking-[0.02em] text-muted-foreground transition-colors duration-fast group-hover:text-primary sm:inline-flex">
-          litt.ly/dot_connector
-          <span aria-hidden>↗</span>
         </span>
       </a>
     </footer>
