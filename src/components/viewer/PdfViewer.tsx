@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, AlertCircle } from 'lucide-react'
 
 import { renderPageToCanvas } from '@/lib/pdf/renderer'
+import { computePageBox } from '@/lib/pdf/page-box'
 import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
 
 /**
@@ -74,26 +75,12 @@ export function PdfViewer() {
   // 표시될 페이지 박스 크기(px) — 렌더 전에도 동일 계산으로 미리 예약 (R2-6 b)
   const boxSize = useMemo(() => {
     if (!page) return null
-    const pad = 48 // 컨테이너 padding 보정 (p-6 = 24*2)
-    const availW = Math.max(containerSize.w - pad, 100)
-    const availH = Math.max(containerSize.h - pad, 100)
-
-    // 회전 시 종횡비가 바뀜 (90/270 → width/height 스왑)
-    const rotated = page.rotation === 90 || page.rotation === 270
-    const pw = rotated ? page.height : page.width
-    const ph = rotated ? page.width : page.height
-
-    let scale = zoom
-    if (fitMode === 'fit-width') {
-      scale = availW / pw
-    } else if (fitMode === 'fit-page') {
-      scale = Math.min(availW / pw, availH / ph)
-    }
-    return {
-      w: Math.max(Math.round(pw * scale), 1),
-      h: Math.max(Math.round(ph * scale), 1),
-      scale,
-    }
+    return computePageBox(page, {
+      zoom,
+      fitMode,
+      availW: containerSize.w,
+      availH: containerSize.h,
+    })
   }, [page, zoom, fitMode, containerSize.w, containerSize.h])
 
   useEffect(() => {
