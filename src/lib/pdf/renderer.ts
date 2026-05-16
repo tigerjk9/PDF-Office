@@ -8,12 +8,19 @@
 
 import './worker-config'
 import { loadPdfDocument } from './loader'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 
 export interface RenderOptions {
   /** 렌더 배율 (1.0 = 100%) */
   scale: number
   /** 누적 회전 각도 (0/90/180/270). pdfjs viewport에 합성 */
   rotation?: 0 | 90 | 180 | 270
+  /**
+   * 공유 PDFDocumentProxy 주입(연속 뷰어 — doc-cache).
+   * 주어지면 재파싱/ destroy 하지 않는다. 미지정 시 기존 동작(폴백):
+   * 호출마다 loadPdfDocument → finally destroy.
+   */
+  doc?: PDFDocumentProxy
 }
 
 /** 취소 가능한 렌더 핸들. */
@@ -51,7 +58,8 @@ export function renderPageToCanvas(
   let renderTask: { cancel: () => void } | null = null
 
   const promise = (async () => {
-    const doc = await loadPdfDocument(bytes)
+    const injected = opts.doc
+    const doc = injected ?? (await loadPdfDocument(bytes))
     try {
       if (cancelled) return
       const page = await doc.getPage(pageIndex + 1) // pdfjs는 1-based
@@ -83,7 +91,8 @@ export function renderPageToCanvas(
       }
       page.cleanup()
     } finally {
-      await doc.destroy()
+      // 주입 문서는 호출자(doc-cache)가 수명 관리 — 여기서 destroy 금지.
+      if (!injected) await doc.destroy()
     }
   })()
 
