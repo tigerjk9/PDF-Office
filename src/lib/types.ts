@@ -142,10 +142,14 @@ export interface ApplyOperationResult {
 
 export type EditMode = 'view' | 'edit' | 'merge'
 
+/** 뷰어 보기 모드. Phase 2에서 'spread'(2페이지) 추가 예정. */
+export type ViewMode = 'continuous' | 'single'
+
 export interface ViewerState {
   currentPageIndex: PageIndex
   zoom: number
   fitMode: 'fit-width' | 'fit-page' | null
+  viewMode: ViewMode
 }
 
 export interface PdfStore {
@@ -183,6 +187,7 @@ export interface PdfStore {
   setEditMode: (mode: EditMode) => void
   setZoom: (zoom: number) => void
   setFitMode: (mode: ViewerState['fitMode']) => void
+  setViewMode: (mode: ViewMode) => void
   setCurrentPage: (pageIndex: PageIndex) => void
 
   // --- 액션: AI ---

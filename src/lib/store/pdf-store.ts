@@ -68,6 +68,7 @@ import type {
   PdfOperation,
   PdfStore,
   ViewerState,
+  ViewMode,
 } from '@/lib/types'
 
 // ---- Helpers --------------------------------------------------------------
@@ -98,6 +99,7 @@ const initialViewer: ViewerState = {
   currentPageIndex: 0,
   zoom: 1.0,
   fitMode: 'fit-width',
+  viewMode: 'continuous',
 }
 
 /**
@@ -794,6 +796,8 @@ export const usePdfStore = create<PdfStore>()(
           },
           setFitMode: (fitMode) =>
             set((s) => ({ viewer: { ...s.viewer, fitMode } })),
+          setViewMode: (viewMode: ViewMode) =>
+            set((s) => ({ viewer: { ...s.viewer, viewMode } })),
           setCurrentPage: (pageIndex: PageIndex) =>
             set((s) => {
               const activeDoc = s.documents.find((d) => d.id === s.activeDocId)
@@ -876,9 +880,26 @@ export const usePdfStore = create<PdfStore>()(
         }),
         {
           name: 'pdf-office-state',
-          version: 2,
+          version: 3,
           // IndexedDB 어댑터: Uint8Array(bytes)를 무손실 저장 (JSON 직렬화 X)
           storage: createIdbStorage<Partial<PdfStore>>(),
+          // v2 이하(또는 viewMode 부재) 영속 상태 → 연속 스크롤을 기본으로 주입.
+          // 기존 사용자는 fitMode만 저장돼 있으므로 viewMode 없으면 'continuous'.
+          migrate: (persisted: unknown, version: number) => {
+            const state = persisted as Partial<PdfStore> | undefined
+            if (!state || !state.viewer) return state as Partial<PdfStore>
+            const v = state.viewer as Partial<ViewerState>
+            if (version < 3 || !v.viewMode) {
+              return {
+                ...state,
+                viewer: {
+                  ...(state.viewer as ViewerState),
+                  viewMode: 'continuous' as ViewMode,
+                },
+              }
+            }
+            return state
+          },
           // 문서(bytes 포함) + 활성 문서 + 뷰어 상태를 영속화.
           // 휘발성(isLoading/loadingMessage/error)과 미연결 conversionResults는 제외.
           partialize: (s) => ({
