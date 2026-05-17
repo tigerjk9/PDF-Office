@@ -15,7 +15,7 @@ export function PanelResizer(props: {
   max: number
   onWidthChange: (w: number) => void
 }) {
-  const { width, onWidthChange } = props
+  const { width, min, max, onWidthChange } = props
   const dragRef = useRef<{ startX: number; startW: number } | null>(null)
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -51,6 +51,9 @@ export function PanelResizer(props: {
       role="separator"
       aria-orientation="vertical"
       aria-label="페이지 패널 크기 조절"
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={Math.round(width)}
     />
   )
 }
