@@ -30,6 +30,11 @@ export function ContinuousViewer() {
   const fitMode = usePdfStore((s) => s.viewer.fitMode)
   const currentPageIndex = usePdfStore((s) => s.viewer.currentPageIndex)
   const setCurrentPage = usePdfStore((s) => s.setCurrentPage)
+  const setZoom = usePdfStore((s) => s.setZoom)
+  const zoomRef = useRef(zoom)
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
 
   const bytes = activeDoc?.bytes ?? null
 
@@ -127,6 +132,71 @@ export function ContinuousViewer() {
     pageCount: pages.length,
     onPageChange: setCurrentPage,
   })
+
+  // Ctrl/⌘ + 휠 → 줌. 일반 휠은 네이티브 스크롤 유지.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      e.preventDefault()
+      const dir = e.deltaY < 0 ? 1 : -1
+      const next = +(zoomRef.current + dir * 0.1).toFixed(2)
+      setZoom(Math.max(0.25, Math.min(4.0, next)))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [setZoom])
+
+  // 콘텐츠가 컨테이너보다 넓을 때 드래그 팬(grab/grabbing)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    let panning = false
+    let startX = 0
+    let startY = 0
+    let startLeft = 0
+    let startTop = 0
+
+    const canPan = () => el.scrollWidth > el.clientWidth + 1
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0 || !canPan()) return
+      panning = true
+      startX = e.clientX
+      startY = e.clientY
+      startLeft = el.scrollLeft
+      startTop = el.scrollTop
+      el.setPointerCapture(e.pointerId)
+      el.style.cursor = 'grabbing'
+    }
+    const onPointerMove = (e: PointerEvent) => {
+      if (!panning) return
+      el.scrollLeft = startLeft - (e.clientX - startX)
+      el.scrollTop = startTop - (e.clientY - startY)
+    }
+    const onPointerUp = (e: PointerEvent) => {
+      if (!panning) return
+      panning = false
+      try {
+        el.releasePointerCapture(e.pointerId)
+      } catch {
+        /* 캡처 해제 실패 무해 */
+      }
+      el.style.cursor = ''
+    }
+
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', onPointerUp)
+    el.addEventListener('pointercancel', onPointerUp)
+    return () => {
+      el.removeEventListener('pointerdown', onPointerDown)
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerup', onPointerUp)
+      el.removeEventListener('pointercancel', onPointerUp)
+    }
+  }, [])
 
   if (!activeDoc) {
     return (
