@@ -42,6 +42,7 @@ export function useKeyboardShortcuts({
 }: UseKeyboardShortcutsArgs): void {
   const setCurrentPage = usePdfStore((s) => s.setCurrentPage)
   const currentPageIndex = usePdfStore((s) => s.viewer.currentPageIndex)
+  const viewMode = usePdfStore((s) => s.viewer.viewMode)
   const clearSelection = usePdfStore((s) => s.clearSelection)
   const undo = usePdfStore((s) => s.undo)
   const redo = usePdfStore((s) => s.redo)
@@ -95,6 +96,35 @@ export function useKeyboardShortcuts({
         return
       }
 
+      // 연속 모드 스크롤 키: ↑/PageUp 이전, ↓/PageDown/Space 다음, Home/End 처음·끝
+      if (viewMode === 'continuous') {
+        if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault()
+          setCurrentPage(Math.max(0, currentPageIndex - 1))
+          return
+        }
+        if (
+          e.key === 'ArrowDown' ||
+          e.key === 'PageDown' ||
+          e.key === ' ' ||
+          e.key === 'Spacebar'
+        ) {
+          e.preventDefault()
+          setCurrentPage(Math.min(pageCount - 1, currentPageIndex + 1))
+          return
+        }
+        if (e.key === 'Home') {
+          e.preventDefault()
+          setCurrentPage(0)
+          return
+        }
+        if (e.key === 'End') {
+          e.preventDefault()
+          setCurrentPage(Math.max(0, pageCount - 1))
+          return
+        }
+      }
+
       // 삭제 (확인 다이얼로그 경유)
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedPages.length > 0) {
@@ -118,5 +148,6 @@ export function useKeyboardShortcuts({
     redo,
     selectAll,
     onRequestDelete,
+    viewMode,
   ])
 }
