@@ -100,7 +100,7 @@ export function PageSlot({
         <canvas
           ref={canvasRef}
           className="block h-full w-full rounded-sm"
-          aria-label={`${pageIndex + 1}페이지`}
+          aria-hidden
         />
       )}
       {visible && !rendered && !error && (

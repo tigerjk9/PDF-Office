@@ -78,7 +78,7 @@ export function ContinuousViewer() {
     }
   }, [])
 
-  // 페이지별 박스(연속 모드는 fit-page 미지원 → fit-width/zoom만; pad=0)
+  // 페이지별 박스(연속 모드는 fit-page 미지원 → fit-width/zoom만; 컨테이너 p-6=48 보정)
   const pages = activeDoc?.pages ?? []
   const boxes = useMemo(() => {
     return pages.map((p) =>
