@@ -3,6 +3,7 @@
  *
  * 등록 단축키:
  *   - ← / →           : 이전 / 다음 페이지
+ *   - ↑ / ↓ / PageUp / PageDown / Space / Home / End : 연속 모드 페이지 스크롤
  *   - Delete / Backspace: 선택 페이지 삭제 요청(확인 다이얼로그 경유)
  *   - Ctrl/Cmd+Z       : 실행취소
  *   - Ctrl/Cmd+Shift+Z : 다시실행
@@ -98,6 +99,13 @@ export function useKeyboardShortcuts({
 
       // 연속 모드 스크롤 키: ↑/PageUp 이전, ↓/PageDown/Space 다음, Home/End 처음·끝
       if (viewMode === 'continuous') {
+        // Space 는 포커스된 버튼/링크의 표준 활성화 키 → 그 경우 가로채지 않음
+        const ae = document.activeElement
+        const onInteractive =
+          ae instanceof HTMLElement &&
+          (ae.tagName === 'BUTTON' ||
+            ae.tagName === 'A' ||
+            ae.getAttribute('role') === 'button')
         if (e.key === 'ArrowUp' || e.key === 'PageUp') {
           e.preventDefault()
           setCurrentPage(Math.max(0, currentPageIndex - 1))
@@ -106,8 +114,7 @@ export function useKeyboardShortcuts({
         if (
           e.key === 'ArrowDown' ||
           e.key === 'PageDown' ||
-          e.key === ' ' ||
-          e.key === 'Spacebar'
+          ((e.key === ' ' || e.key === 'Spacebar') && !onInteractive)
         ) {
           e.preventDefault()
           setCurrentPage(Math.min(pageCount - 1, currentPageIndex + 1))
