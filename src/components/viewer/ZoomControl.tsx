@@ -8,6 +8,8 @@ import {
   ZoomOut,
   Maximize2,
   MoveHorizontal,
+  ScrollText,
+  FileText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -38,6 +40,8 @@ export function ZoomControl() {
   const setCurrentPage = usePdfStore((s) => s.setCurrentPage)
   const setZoom = usePdfStore((s) => s.setZoom)
   const setFitMode = usePdfStore((s) => s.setFitMode)
+  const viewMode = usePdfStore((s) => s.viewer.viewMode)
+  const setViewMode = usePdfStore((s) => s.setViewMode)
 
   // 페이지 입력 임시값 (포커스 중 자유 입력, blur/Enter 시 커밋)
   const [pageInput, setPageInput] = useState(String(currentPageIndex + 1))
@@ -198,6 +202,46 @@ export function ZoomControl() {
 
       <Separator orientation="vertical" className="h-4 flex-shrink-0" />
 
+      {/* 보기 모드 (Phase 2에서 2페이지 추가) */}
+      <div
+        className="flex flex-shrink-0 items-center gap-0.5"
+        role="group"
+        aria-label="보기 모드"
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={viewMode === 'continuous' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode('continuous')}
+              aria-label="연속 스크롤 보기"
+              aria-pressed={viewMode === 'continuous'}
+            >
+              <ScrollText className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>연속 스크롤 보기</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={viewMode === 'single' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode('single')}
+              aria-label="한 페이지씩 보기"
+              aria-pressed={viewMode === 'single'}
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>한 페이지씩 보기</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <Separator orientation="vertical" className="h-4 flex-shrink-0" />
+
       {/* 맞춤 모드 */}
       <div className="flex flex-shrink-0 items-center gap-0.5">
         <Tooltip>
@@ -217,23 +261,25 @@ export function ZoomControl() {
           </TooltipTrigger>
           <TooltipContent>너비 맞춤</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={fitMode === 'fit-page' ? 'default' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() =>
-                setFitMode(fitMode === 'fit-page' ? null : 'fit-page')
-              }
-              aria-label="페이지 맞춤"
-              aria-pressed={fitMode === 'fit-page'}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>페이지 맞춤</TooltipContent>
-        </Tooltip>
+        {viewMode === 'single' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={fitMode === 'fit-page' ? 'default' : 'ghost'}
+                size="icon"
+                className="h-7 w-7"
+                onClick={() =>
+                  setFitMode(fitMode === 'fit-page' ? null : 'fit-page')
+                }
+                aria-label="페이지 맞춤"
+                aria-pressed={fitMode === 'fit-page'}
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>페이지 맞춤</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   )
