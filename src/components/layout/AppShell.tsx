@@ -48,6 +48,8 @@ import { ConvertPanel } from '@/components/ai/ConvertPanel'
 import { MergeDialog } from '@/components/merge/MergeDialog'
 import { HelpSheet } from '@/components/help/HelpSheet'
 import { AppFooter } from '@/components/layout/AppFooter'
+import { PanelResizer } from '@/components/layout/PanelResizer'
+import { usePanelWidth } from '@/hooks/usePanelWidth'
 
 /**
  * 전체 앱 셸.
@@ -75,6 +77,10 @@ export function AppShell() {
   const [resetOpen, setResetOpen] = useState(false)
 
   const canMerge = documents.length >= 2
+
+  // 페이지 패널 폭(데스크탑) — 드래그 리사이즈 + localStorage 영속
+  const { width: pagesPanelWidth, setWidth: setPagesPanelWidth } =
+    usePanelWidth('pdf-office-pages-panel-w', 248, 180, 420)
 
   // 암호 PDF 비밀번호 재시도 흐름 (P2-8)
   const {
@@ -340,7 +346,10 @@ export function AppShell() {
                 <EditorToolbar onRequestDelete={requestDelete} />
                 <div className="flex min-h-0 flex-1 overflow-hidden">
                   {/* 데스크탑 페이지 패널 (모바일에서 숨김) */}
-                  <div className="hidden w-[15.5rem] flex-shrink-0 flex-col border-r border-border bg-background md:flex">
+                  <div
+                    className="relative hidden flex-shrink-0 flex-col border-r border-border bg-background md:flex"
+                    style={{ width: pagesPanelWidth }}
+                  >
                     <div className="flex h-9 flex-shrink-0 items-center justify-between px-3">
                       <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                         페이지
@@ -353,6 +362,12 @@ export function AppShell() {
                     <div className="min-h-0 flex-1 overflow-hidden">
                       <PageGrid onRequestDelete={requestDelete} />
                     </div>
+                    <PanelResizer
+                      width={pagesPanelWidth}
+                      min={180}
+                      max={420}
+                      onWidthChange={setPagesPanelWidth}
+                    />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <ZoomControl />
