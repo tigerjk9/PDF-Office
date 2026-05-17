@@ -10,6 +10,7 @@ import {
   MoveHorizontal,
   ScrollText,
   FileText,
+  Columns2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -237,6 +238,21 @@ export function ZoomControl() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>한 페이지씩 보기</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={viewMode === 'spread' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setViewMode('spread')}
+              aria-label="두 페이지씩 보기"
+              aria-pressed={viewMode === 'spread'}
+            >
+              <Columns2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>두 페이지씩 보기</TooltipContent>
         </Tooltip>
       </div>
 
