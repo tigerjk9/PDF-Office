@@ -18,6 +18,7 @@ import { usePdfStore, selectActiveDoc } from '@/lib/store/pdf-store'
 export function SinglePageViewer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  /** 진행 중 렌더 핸들 — 새 렌더 전에 cancel() (캔버스 다중 render 충돌 방지) */
   const renderHandleRef = useRef<{ cancel: () => void } | null>(null)
   const [isRendering, setIsRendering] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
@@ -65,6 +66,7 @@ export function SinglePageViewer() {
     }
   }, [])
 
+  // 표시될 페이지 박스 크기(px) — 렌더 전에도 동일 계산으로 미리 예약 (R2-6 b)
   const boxSize = useMemo(() => {
     if (!page) return null
     return computePageBox(page, {
@@ -79,6 +81,9 @@ export function SinglePageViewer() {
     if (!activeDoc || !page || !canvasRef.current || !boxSize) return
 
     let disposed = false
+
+    // 이전 렌더가 진행 중이면 먼저 취소 — 같은 canvas 다중 render() 금지
+    // (새로고침 직후 rehydrate + ResizeObserver 로 빠르게 재실행될 때 충돌).
     renderHandleRef.current?.cancel()
 
     setIsRendering(true)
@@ -134,6 +139,7 @@ export function SinglePageViewer() {
             : { aspectRatio: '1 / 1.414', width: 'min(60%, 480px)' }
         }
       >
+        {/* 페이지 박스를 종횡비 크기로 즉시 예약 → 렌더 전/후 점프 없음 (R2-6 b) */}
         <canvas
           ref={canvasRef}
           className="block h-full w-full rounded-sm"
