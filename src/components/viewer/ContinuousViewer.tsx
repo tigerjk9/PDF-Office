@@ -8,9 +8,13 @@ import { computePageBox } from '@/lib/pdf/page-box'
 import { acquirePdfDoc, releasePdfDoc } from '@/lib/pdf/doc-cache'
 import { PageSlot } from '@/components/viewer/PageSlot'
 import { useViewerScrollSync } from '@/hooks/useViewerScrollSync'
+import { groupIntoRows } from '@/lib/pdf/spread'
 
 /** 뷰포트 기준 ±이만큼의 화면을 미리 렌더(프리페치) */
 const PREFETCH_SCREENS = 1.5
+
+/** 2페이지(2-up) 열 사이 간격(px) — Tailwind gap-4=16 와 일치 */
+const SPREAD_GAP = 16
 
 /**
  * 연속 스크롤 뷰어 (보기 모드 'continuous').
@@ -28,6 +32,7 @@ export function ContinuousViewer() {
   const activeDoc = usePdfStore(selectActiveDoc)
   const zoom = usePdfStore((s) => s.viewer.zoom)
   const fitMode = usePdfStore((s) => s.viewer.fitMode)
+  const viewMode = usePdfStore((s) => s.viewer.viewMode)
   const currentPageIndex = usePdfStore((s) => s.viewer.currentPageIndex)
   const setCurrentPage = usePdfStore((s) => s.setCurrentPage)
   const setZoom = usePdfStore((s) => s.setZoom)
@@ -84,18 +89,30 @@ export function ContinuousViewer() {
   }, [])
 
   // 페이지별 박스(연속 모드는 fit-page 미지원 → fit-width/zoom만; 컨테이너 p-6=48 보정)
+  // spread(2열): 열당 가용폭 perCol = floor((컨테이너폭 - p-6 48 - gap 16) / 2),
+  // pad=0(perCol이 이미 padding 차감값). 1열은 기존과 동일 인자 → 회귀 0.
   const pages = activeDoc?.pages ?? []
+  const cols = viewMode === 'spread' ? 2 : 1
   const boxes = useMemo(() => {
+    const perCol = Math.floor((containerSize.w - 48 - SPREAD_GAP) / 2)
     return pages.map((p) =>
       computePageBox(p, {
         zoom,
         fitMode: fitMode === 'fit-page' ? 'fit-width' : fitMode,
-        availW: containerSize.w,
+        availW: cols === 2 ? perCol : containerSize.w,
         availH: containerSize.h,
-        pad: 48,
+        pad: cols === 2 ? 0 : 48,
       }),
     )
-  }, [pages, zoom, fitMode, containerSize.w, containerSize.h])
+  }, [pages, zoom, fitMode, containerSize.w, containerSize.h, viewMode])
+
+  // 2-up 행 그룹: 페이지 배열 위치 인덱스를 cols 단위로 묶는다.
+  // cols=1 → [[0],[1],…](기존 연속과 동일 시각), cols=2 → [[0,1],[2,3],…].
+  // boxes[i]는 pages[i]와 위치 정렬돼 있으므로 위치 인덱스로 그룹핑한다.
+  const rows = useMemo(
+    () => groupIntoRows(pages.map((_, i) => i), cols),
+    [pages, cols],
+  )
 
   // IntersectionObserver 윈도잉
   useEffect(() => {
@@ -124,7 +141,10 @@ export function ContinuousViewer() {
     const slots = el.querySelectorAll<HTMLElement>('[data-page-index]')
     slots.forEach((s) => io.observe(s))
     return () => io.disconnect()
-  }, [pages.length, activeDoc?.id])
+    // viewMode 포함 필수: continuous↔spread 전환 시 행 그룹/키가 바뀌어
+    // PageSlot이 리마운트된다. viewMode 미포함 시 IO가 재실행되지 않아
+    // 리마운트된 새 슬롯을 관찰하지 못함 → 윈도잉 정지(전 페이지 썸네일 고착).
+  }, [pages.length, activeDoc?.id, viewMode])
 
   useViewerScrollSync({
     containerRef,
@@ -213,16 +233,26 @@ export function ContinuousViewer() {
       role="region"
       aria-label="PDF 뷰어 (연속)"
     >
-      {pages.map((p, i) => (
-        <PageSlot
-          key={`${activeDoc.id}-${p.index}`}
-          page={p}
-          box={boxes[i]}
-          doc={doc}
-          pageIndex={p.index}
-          visible={visible.has(p.index)}
-          bytes={activeDoc.bytes}
-        />
+      {rows.map((row) => (
+        <div
+          key={`row-${activeDoc.id}-${row[0]}`}
+          className="flex w-full flex-row items-start justify-center gap-4"
+        >
+          {row.map((i) => {
+            const p = pages[i]
+            return (
+              <PageSlot
+                key={`${activeDoc.id}-${p.index}`}
+                page={p}
+                box={boxes[i]}
+                doc={doc}
+                pageIndex={p.index}
+                visible={visible.has(p.index)}
+                bytes={activeDoc.bytes}
+              />
+            )
+          })}
+        </div>
       ))}
     </div>
   )
