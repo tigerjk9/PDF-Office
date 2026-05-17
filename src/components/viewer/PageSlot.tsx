@@ -89,8 +89,21 @@ export function PageSlot({
         <img
           src={page.thumbnail}
           alt={`${pageIndex + 1}페이지 미리보기`}
-          className="h-full w-full rounded-sm object-contain"
           draggable={false}
+          className="absolute left-1/2 top-1/2 rounded-sm object-contain"
+          style={
+            page.rotation === 90 || page.rotation === 270
+              ? {
+                  width: box.h,
+                  height: box.w,
+                  transform: `translate(-50%, -50%) rotate(${page.rotation}deg)`,
+                }
+              : {
+                  width: box.w,
+                  height: box.h,
+                  transform: `translate(-50%, -50%) rotate(${page.rotation}deg)`,
+                }
+          }
         />
       )}
       {!visible && !page.thumbnail && (
