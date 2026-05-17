@@ -142,8 +142,8 @@ export interface ApplyOperationResult {
 
 export type EditMode = 'view' | 'edit' | 'merge'
 
-/** 뷰어 보기 모드. Phase 2에서 'spread'(2페이지) 추가 예정. */
-export type ViewMode = 'continuous' | 'single'
+/** 뷰어 보기 모드. 'spread'=2페이지 2-up(연속 스크롤 2열). */
+export type ViewMode = 'continuous' | 'single' | 'spread'
 
 export interface ViewerState {
   currentPageIndex: PageIndex
