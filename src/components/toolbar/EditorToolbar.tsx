@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Trash2,
-  RotateCw,
+  RotateCwSquare,
   MoveUp,
   MoveDown,
   Download,
@@ -135,28 +135,34 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
 
         <Separator orientation="vertical" className="mx-1 h-4" />
 
-        {/* 이동 버튼 (단일 선택만) */}
+        {/* 페이지 순서 변경 (단일 선택만) — '이동(navigate)'와의 어휘 충돌 제거 */}
+        <span
+          className="ml-1 mr-0.5 hidden text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:inline"
+          aria-hidden
+        >
+          순서
+        </span>
         <ToolbarButton
           icon={<ChevronsUp className="h-4 w-4" />}
-          label="맨 앞으로 이동"
+          label="이 페이지를 맨 앞으로 (문서 내 순서 변경)"
           onClick={handleMoveTop}
           disabled={!singleSelected || !canMoveUp}
         />
         <ToolbarButton
           icon={<MoveUp className="h-4 w-4" />}
-          label="앞으로 이동"
+          label="이 페이지를 한 칸 앞으로 (문서 내 순서 변경)"
           onClick={handleMoveUp}
           disabled={!singleSelected || !canMoveUp}
         />
         <ToolbarButton
           icon={<MoveDown className="h-4 w-4" />}
-          label="뒤로 이동"
+          label="이 페이지를 한 칸 뒤로 (문서 내 순서 변경)"
           onClick={handleMoveDown}
           disabled={!singleSelected || !canMoveDown}
         />
         <ToolbarButton
           icon={<ChevronsDown className="h-4 w-4" />}
-          label="맨 뒤로 이동"
+          label="이 페이지를 맨 뒤로 (문서 내 순서 변경)"
           onClick={handleMoveBottom}
           disabled={!singleSelected || !canMoveDown}
         />
@@ -165,7 +171,7 @@ export function EditorToolbar({ onRequestDelete }: EditorToolbarProps) {
 
         {/* 회전 (단일 + 다중 선택 — P1-6) */}
         <ToolbarButton
-          icon={<RotateCw className="h-4 w-4" />}
+          icon={<RotateCwSquare className="h-4 w-4" />}
           label={
             multiSelected
               ? `선택한 ${selectedPages.length}개 페이지 90° 회전`

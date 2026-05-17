@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { RotateCw, Trash2 } from 'lucide-react'
+import { RotateCwSquare, Trash2 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { PageIndex, PageThumbnailProps } from '@/lib/types'
@@ -232,7 +232,7 @@ export function PageThumbnail({
                 }}
                 aria-label={`${page.index + 1}페이지 90도 회전`}
               >
-                <RotateCw className="h-3 w-3" />
+                <RotateCwSquare className="h-3 w-3" />
               </button>
             )}
             {onDelete && (
