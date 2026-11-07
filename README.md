@@ -50,7 +50,7 @@
 | 🔍 | **검색** | 문서 전체 텍스트 검색 후 해당 페이지로 이동 |
 | 🔗 | **병합** | 2개 이상 PDF를 원하는 순서로 결합 — **서로 다른 페이지 크기 자동 정규화*** |
 | ♻️ | **초기화** | 모든 문서·편집 내역을 한 번에 비우고 처음 상태로 |
-| 🤖 | **AI → Markdown** | PDF를 구조화된 Markdown으로 변환 (Claude Sonnet 4.6 / Gemini 2.5 Flash / GPT-4o) |
+| 🤖 | **AI → Markdown** | PDF를 구조화된 Markdown으로 변환 (Claude Sonnet 4.6 / Gemini 3.5 Flash-Lite / GPT-4o) |
 
 <sub>\* "다른 문서의 페이지 삽입"과 "병합"은 문서를 **2개 이상** 열었을 때 도구막대에 나타납니다.</sub>
 
@@ -121,7 +121,7 @@ API 키는 **브라우저 `localStorage`에만** 저장되고, 동일 출처 `/a
 | 제공자 | 모델 | 키 발급 |
 |---|---|---|
 | Claude (Anthropic) | `claude-sonnet-4-6` | [console.anthropic.com](https://console.anthropic.com) |
-| Gemini (Google) | `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com) |
+| Gemini (Google) | `gemini-3.5-flash-lite` | [aistudio.google.com](https://aistudio.google.com) |
 | OpenAI | `gpt-4o` | [platform.openai.com](https://platform.openai.com) |
 
 텍스트가 없는 스캔 PDF는 페이지 이미지를 비전 모델로 전달해 변환합니다. 변환 범위(**전체 / 현재 / 선택 / 범위**)를 지정할 수 있고, 결과는 문서별로 캐시됩니다.

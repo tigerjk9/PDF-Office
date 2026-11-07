@@ -50,7 +50,7 @@
 | 🔍 | **Search** | Full-text search across the document, jump to the matching page |
 | 🔗 | **Merge** | Combine 2+ PDFs in any order — **mixed page sizes auto-normalized*** |
 | ♻️ | **Reset** | Clear all documents and edits in one click |
-| 🤖 | **AI → Markdown** | Convert PDF to structured Markdown (Claude Sonnet 4.6 / Gemini 2.5 Flash / GPT-4o) |
+| 🤖 | **AI → Markdown** | Convert PDF to structured Markdown (Claude Sonnet 4.6 / Gemini 3.5 Flash-Lite / GPT-4o) |
 
 <sub>\* "Insert from another doc" and "Merge" appear in the toolbar only when **2+ documents** are open.</sub>
 
@@ -121,7 +121,7 @@ Your API key is stored **only in browser `localStorage`** and passed through the
 | Provider | Model | Get a key |
 |---|---|---|
 | Claude (Anthropic) | `claude-sonnet-4-6` | [console.anthropic.com](https://console.anthropic.com) |
-| Gemini (Google) | `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com) |
+| Gemini (Google) | `gemini-3.5-flash-lite` | [aistudio.google.com](https://aistudio.google.com) |
 | OpenAI | `gpt-4o` | [platform.openai.com](https://platform.openai.com) |
 
 Scanned PDFs without a text layer are sent as page images to a vision model. Conversion scope (**all / current / selected / range**) is configurable, and results are cached per document.

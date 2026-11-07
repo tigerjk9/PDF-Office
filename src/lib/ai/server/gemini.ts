@@ -11,7 +11,7 @@
 import type { AIContentPart } from '../messages'
 
 // 현행 권장 모델 — 비전(inline_data) 입력 지원 확인됨
-export const GEMINI_MODEL = 'gemini-2.5-flash'
+export const GEMINI_MODEL = 'gemini-3.5-flash-lite'
 
 const GEMINI_ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`
@@ -41,7 +41,7 @@ export async function* streamGemini(
   const body = {
     system_instruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: toGeminiParts(content) }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+    generationConfig: { maxOutputTokens: 8192 },
   }
 
   const res = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL), {

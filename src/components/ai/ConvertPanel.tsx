@@ -27,7 +27,7 @@ import type { AIProvider } from '@/lib/types'
 
 /**
  * PROVIDERS 라벨은 server/* 모델 상수와 정확히 정합한다 (R2-1):
- * claude-sonnet-4-6 / gemini-2.5-flash / gpt-4o.
+ * claude-sonnet-4-6 / gemini-3.5-flash-lite / gpt-4o.
  */
 const PROVIDERS: {
   id: AIProvider
@@ -44,7 +44,7 @@ const PROVIDERS: {
   {
     id: 'gemini',
     label: 'Gemini',
-    model: 'Gemini 2.5 Flash',
+    model: 'Gemini 3.5 Flash-Lite',
     placeholder: 'AIza...',
   },
   {
